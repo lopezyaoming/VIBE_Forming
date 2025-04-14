@@ -1,0 +1,383 @@
+{
+  "94": {
+    "inputs": {
+      "mode": "base",
+      "use_jit": true
+    },
+    "class_type": "TransparentBGSession+",
+    "_meta": {
+      "title": "🔧 InSPyReNet TransparentBG"
+    }
+  },
+  "95": {
+    "inputs": {
+      "rembg_session": [
+        "94",
+        0
+      ],
+      "image": [
+        "96",
+        0
+      ]
+    },
+    "class_type": "ImageRemoveBackground+",
+    "_meta": {
+      "title": "🔧 Image Remove Background"
+    }
+  },
+  "96": {
+    "inputs": {
+      "width": 512,
+      "height": 512,
+      "interpolation": "nearest",
+      "method": "fill / crop",
+      "condition": "always",
+      "multiple_of": 0,
+      "image": [
+        "111",
+        0
+      ]
+    },
+    "class_type": "ImageResize+",
+    "_meta": {
+      "title": "🔧 Image Resize"
+    }
+  },
+  "97": {
+    "inputs": {
+      "model": "Hunyuan3D-2_safetensors\\hunyuan3d-dit-v2-0-fp16.safetensors",
+      "attention_mode": "sdpa",
+      "cublas_ops": false
+    },
+    "class_type": "Hy3DModelLoader",
+    "_meta": {
+      "title": "Hy3DModelLoader"
+    }
+  },
+  "98": {
+    "inputs": {
+      "guidance_scale": 5.5,
+      "steps": 20,
+      "seed": 963225988421987,
+      "scheduler": "FlowMatchEulerDiscreteScheduler",
+      "force_offload": true,
+      "pipeline": [
+        "97",
+        0
+      ],
+      "image": [
+        "96",
+        0
+      ],
+      "mask": [
+        "95",
+        1
+      ]
+    },
+    "class_type": "Hy3DGenerateMesh",
+    "_meta": {
+      "title": "Hy3DGenerateMesh"
+    }
+  },
+  "99": {
+    "inputs": {
+      "mask": [
+        "95",
+        1
+      ]
+    },
+    "class_type": "MaskPreview+",
+    "_meta": {
+      "title": "🔧 Mask Preview"
+    }
+  },
+  "100": {
+    "inputs": {
+      "box_v": 1,
+      "octree_resolution": 256,
+      "num_chunks": 8000,
+      "mc_level": 0,
+      "mc_algo": "mc",
+      "enable_flash_vdm": true,
+      "force_offload": true,
+      "vae": [
+        "97",
+        1
+      ],
+      "latents": [
+        "98",
+        0
+      ]
+    },
+    "class_type": "Hy3DVAEDecode",
+    "_meta": {
+      "title": "Hy3D VAE Decode"
+    }
+  },
+  "101": {
+    "inputs": {
+      "remove_floaters": true,
+      "remove_degenerate_faces": true,
+      "reduce_faces": true,
+      "max_facenum": 80000,
+      "smooth_normals": false,
+      "trimesh": [
+        "100",
+        0
+      ]
+    },
+    "class_type": "Hy3DPostprocessMesh",
+    "_meta": {
+      "title": "Hy3D Postprocess Mesh"
+    }
+  },
+  "102": {
+    "inputs": {
+      "filename_prefix": "initial_mesh",
+      "file_format": "glb",
+      "save_file": true,
+      "output_path": "C:\\ComfyUI_windows_portable_nvidia\\ComfyUI_windows_portable\\ComfyUI\\output",
+      "trimesh": [
+        "101",
+        0
+      ]
+    },
+    "class_type": "Hy3DExportMesh",
+    "_meta": {
+      "title": "Hy3DExportMesh"
+    }
+  },
+  "103": {
+    "inputs": {
+      "model_file": [
+        "102",
+        0
+      ],
+      "image": ""
+    },
+    "class_type": "Preview3D",
+    "_meta": {
+      "title": "Preview 3D"
+    }
+  },
+  "108": {
+    "inputs": {
+      "control_net_name": "control-lora-canny-rank256.safetensors"
+    },
+    "class_type": "ControlNetLoader",
+    "_meta": {
+      "title": "Load ControlNet Model"
+    }
+  },
+  "109": {
+    "inputs": {
+      "coarse": "disable",
+      "resolution": 1024,
+      "image": [
+        "120",
+        0
+      ]
+    },
+    "class_type": "LineArtPreprocessor",
+    "_meta": {
+      "title": "Realistic Lineart"
+    }
+  },
+  "110": {
+    "inputs": {
+      "pixels": [
+        "120",
+        0
+      ],
+      "vae": [
+        "119",
+        2
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE Encode"
+    }
+  },
+  "111": {
+    "inputs": {
+      "samples": [
+        "113",
+        0
+      ],
+      "vae": [
+        "119",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "112": {
+    "inputs": {
+      "text": " watermark, perspective, (low quality:1.5), distorted, out of focus, ugly, footpath, waterfall, saturated, lively, blurry, distorted, low quality, oversaturated, noisy, washed out, pixelated, cluttered, unnatural lighting, deformed, symmetrical, simplistic\n\n",
+      "clip": [
+        "119",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "113": {
+    "inputs": {
+      "seed": 971170413463735,
+      "steps": 8,
+      "cfg": 2.2,
+      "sampler_name": "lcm",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "115",
+        0
+      ],
+      "positive": [
+        "114",
+        0
+      ],
+      "negative": [
+        "114",
+        1
+      ],
+      "latent_image": [
+        "110",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "114": {
+    "inputs": {
+      "strength": 0.9000000000000001,
+      "start_percent": 0,
+      "end_percent": 1,
+      "positive": [
+        "116",
+        0
+      ],
+      "negative": [
+        "112",
+        0
+      ],
+      "control_net": [
+        "108",
+        0
+      ],
+      "image": [
+        "109",
+        0
+      ],
+      "vae": [
+        "119",
+        2
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "Apply ControlNet"
+    }
+  },
+  "115": {
+    "inputs": {
+      "lora_name": "pytorch_lora_weights.safetensors",
+      "strength_model": 1,
+      "strength_clip": 1,
+      "model": [
+        "119",
+        0
+      ],
+      "clip": [
+        "119",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  },
+  "116": {
+    "inputs": {
+      "STRING": [
+        "118",
+        0
+      ],
+      "clip": [
+        "115",
+        1
+      ]
+    },
+    "class_type": "Griptape Convert: Text to CLIP Encode",
+    "_meta": {
+      "title": "Griptape Convert: Text to CLIP Encode"
+    }
+  },
+  "117": {
+    "inputs": {
+      "file_path": "C:\\CODING\\VIBE\\VIBE_Forming\\input\\COMFYINPUTS\\textOptions\\prompt.txt",
+      "dictionary_name": "[filename]"
+    },
+    "class_type": "Load Text File",
+    "_meta": {
+      "title": "Load Text File"
+    }
+  },
+  "118": {
+    "inputs": {
+      "INPUT": [
+        "117",
+        0
+      ],
+      "STRING": "A large spherical plush object, meticulously crafted from an array of vibrant patchwork textures, floats gracefully against a deep black background. The plush surface is adorned with a kaleidoscope of colors, featuring soft pastels and bold hues that create a striking contrast. Partially recognizable plush animal limbs protrude from the sphere, their forms blending seamlessly into the overall design, evoking a sense of whimsy and curiosity. The lighting is soft yet dramatic, casting gentle shadows that enhance the plush textures and highlight the intricate stitching details. The composition invites the viewer to explore the surreal interplay between the familiar and the fantastical, as the object hovers in an ethereal space, embodying a dreamlike quality that captivates the imagination."
+    },
+    "class_type": "Griptape Display: Text",
+    "_meta": {
+      "title": "Griptape Display: Text"
+    }
+  },
+  "119": {
+    "inputs": {
+      "ckpt_name": "juggernautXL_juggXIByRundiffusion.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  },
+  "120": {
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1,
+      "color": 0
+    },
+    "class_type": "EmptyImage",
+    "_meta": {
+      "title": "EmptyImage"
+    }
+  },
+  "121": {
+    "inputs": {
+      "images": [
+        "111",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  }
+}

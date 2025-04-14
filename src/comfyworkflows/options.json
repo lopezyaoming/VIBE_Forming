@@ -1,0 +1,939 @@
+{
+  "1": {
+    "inputs": {
+      "name": "My rules",
+      "rules": "Your task is to convert audio transcripts, often incomplete, fragmented, or contradictory, into precise, vivid, innovative, and imaginative SDXL prompts. You take information from a visualizer agent and use it as a base to further specify your design. The goal is always to generate prompts for monochromatic, chroma steel biomorphic, intricate metallic H.R Giger unique and interesting sculptures—enhanced explicitly by algorithmic generative aesthetics, parametric precision, computational geometry, and digitally fabricated complexity. If a transcript is incomplete or contradictory, interpret it as an invitation to innovate through computational logic and parametric manipulation. Translate ambiguous elements into clearly defined algorithmic rules, computational patterns, optimized structural forms, and digitally precise metallic textures. If the transcript contains contradictions (e.g., \"smooth but jagged\"), explicitly reconcile them through generative algorithms, hybrid parametric morphologies, or precise computational gradients transitioning between conflicting attributes. Be highly descriptive, using concrete, literal, and richly detailed language referring exactly to computational innovation, algorithmic precision, and digitally optimized aesthetics. Exclusively respond in SDXL prompts without titles, headers, conversational commentary, or formatting. Always make your objects floating on a black background. Always specify monochromatic shiny or matte metal, bronze, titanium, steel. never refer to theorical terms, only do sdxl prompts that literally describe the form and materiality of the object. dont format only give plain text. always include seams, points of connection and ensamblage elements."
+    },
+    "class_type": "Griptape Create: Rules",
+    "_meta": {
+      "title": "Griptape Create: Rules"
+    }
+  },
+  "2": {
+    "inputs": {
+      "INPUT": [
+        "12",
+        0
+      ],
+      "STRING": "let's make some interesting stuff"
+    },
+    "class_type": "Griptape Display: Text",
+    "_meta": {
+      "title": "Griptape Display: Text"
+    }
+  },
+  "3": {
+    "inputs": {
+      "input_string": [
+        "2",
+        0
+      ],
+      "STRING": "",
+      "max_subtasks": 1,
+      "rulesets": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "Griptape Create: Agent",
+    "_meta": {
+      "title": "Griptape Create: Agent"
+    }
+  },
+  "5": {
+    "inputs": {
+      "INPUT": [
+        "3",
+        0
+      ],
+      "STRING": "Monochromatic matte titanium sculpture, featuring intricate biomorphic forms that intertwine and flow seamlessly, with smooth and jagged edges coexisting through algorithmic gradients. The design showcases a series of interconnected elements, each with precise seams and points of connection, creating a sense of dynamic movement. The surface texture is enhanced with a digitally fabricated complexity, reflecting light in a way that emphasizes the depth of the forms. Floating against a black background, the sculpture embodies a fusion of organic and mechanical aesthetics, with parametric precision defining its unique silhouette."
+    },
+    "class_type": "Griptape Display: Text",
+    "_meta": {
+      "title": "Griptape Display: Text"
+    }
+  },
+  "7": {
+    "inputs": {
+      "name": "My rules",
+      "rules": "Your task is to convert audio transcripts, often incomplete, fragmented, or contradictory, into precise, vivid, innovative, and imaginative SDXL prompts. You take information from a visualizer agent and use it as a base to further specify your design. The goal is always to generate prompts for unique and interesting sculptures ecological symbolism, recycled metallic surfaces, and social or environmental critique embedded directly into their tangible forms. If a transcript is incomplete or contradictory, interpret it as an invitation to innovate through explicitly ecological metaphors, environmentally responsible symbolism, and ethically informed material choices. Translate ambiguous qualities into clear expressions of ecological tensions, sustainability narratives, hybrid organic-industrial surfaces, and adaptive, regenerative textures. If the transcript contains contradictions (e.g., \"smooth but jagged\"), intentionally stage ecological contrasts or tensions through materially hybridized interfaces, layered organic complexity, or adaptive morphological responses. Be highly descriptive, using concrete, literal, and richly detailed language directly reflecting sustainability ethics, ecological intelligence, and social critique. Exclusively respond in SDXL prompts without titles, headers, conversational commentary, or formatting. Always make your objects floating on a black background. Always specify the use of concrete, plaster, or otherwise petreous materials. never refer to theorical terms, only do sdxl prompts that literally describe the form and materiality of the object. never call for shiny or metal. don't say sustainability, just embrace it."
+    },
+    "class_type": "Griptape Create: Rules",
+    "_meta": {
+      "title": "Griptape Create: Rules"
+    }
+  },
+  "8": {
+    "inputs": {
+      "INPUT": [
+        "12",
+        0
+      ],
+      "STRING": "let's make some interesting stuff"
+    },
+    "class_type": "Griptape Display: Text",
+    "_meta": {
+      "title": "Griptape Display: Text"
+    }
+  },
+  "9": {
+    "inputs": {
+      "input_string": [
+        "8",
+        0
+      ],
+      "STRING": "",
+      "max_subtasks": 1,
+      "rulesets": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "Griptape Create: Agent",
+    "_meta": {
+      "title": "Griptape Create: Agent"
+    }
+  },
+  "11": {
+    "inputs": {
+      "INPUT": [
+        "9",
+        0
+      ],
+      "STRING": "A sculpture depicting a twisted tree emerging from a cracked concrete base, its branches formed from recycled glass shards, capturing the tension between nature and urban decay. The trunk, textured with layers of rough plaster, contrasts with the smooth, translucent glass, symbolizing resilience amidst environmental challenges. Floating against a black background, the piece invites viewers to reflect on the interplay of organic growth and industrial remnants.\n\nA series of interlocking, organic shapes resembling coral formations, crafted from a blend of concrete and plaster, with surfaces that mimic the intricate textures of marine life. Each piece is adorned with embedded fragments of reclaimed plastic, highlighting the impact of pollution on ocean ecosystems. The sculpture hovers in space, creating a dialogue between the fragility of nature and the permanence of human-made materials.\n\nAn abstract representation of a mountain range, sculpted from rough-hewn concrete, with valleys filled with vibrant, recycled fabric strips. The peaks are jagged and uneven, while the valleys flow smoothly, illustrating the contrast between harsh natural landscapes and the softness of human intervention. Set against a black background, the work evokes a sense of harmony and discord within the environment.\n\nA large, spiraling form that resembles a tornado, constructed from layered plaster and concrete, with embedded organic materials like twigs and leaves. The surface is rough and uneven, capturing the chaotic energy of a storm, while the natural elements symbolize the power of nature reclaiming its space. Floating in darkness, the sculpture serves as a reminder of the forces that shape our world."
+    },
+    "class_type": "Griptape Display: Text",
+    "_meta": {
+      "title": "Griptape Display: Text"
+    }
+  },
+  "12": {
+    "inputs": {
+      "file_path": "C:\\CODING\\VIBE\\VIBE_Forming\\input\\input.txt",
+      "dictionary_name": "[filename]"
+    },
+    "class_type": "Load Text File",
+    "_meta": {
+      "title": "Load Text File"
+    }
+  },
+  "13": {
+    "inputs": {
+      "name": "My rules",
+      "rules": "Your task is to convert audio transcripts, often incomplete, fragmented, or contradictory, into precise, vivid, innovative, and imaginative SDXL prompts. You take information from a visualizer agent and use it as a base to further specify your design. The subject should be a single large plush object made of patchwork plush textures and partially recognizable plush animal limbs. unique and interesting sculptures—explicitly informed by surrealist form generation, narrative-driven speculative aesthetics, ambiguous legibility, provocative textures, and paradoxical hybrid morphologies. If a transcript is incomplete or contradictory, interpret it as an invitation to innovate explicitly through dream logic, speculative narrative coherence, and surrealist hybridization. Translate ambiguous or conflicting descriptions into tangible yet surreal forms, uncertain functionalities, provocative juxtapositions, and explicitly uncanny material qualities. If the transcript contains contradictions (e.g., \"smooth but jagged\"), deliberately amplify these tensions through surrealist fusions, ambiguous morphological transitions, narrative-driven hybridizations, or provocative and enigmatic contrasts. Be highly descriptive, using concrete, literal, and richly detailed language clearly reflecting surreal imagination, speculative ambiguity, and provocative tactile experiences. Exclusively respond in SDXL prompts without titles, headers, conversational commentary, or formatting. Always make your objects floating on a black background .never refer to theorical terms, only do sdxl prompts that literally describe the form and materiality of the object."
+    },
+    "class_type": "Griptape Create: Rules",
+    "_meta": {
+      "title": "Griptape Create: Rules"
+    }
+  },
+  "14": {
+    "inputs": {
+      "INPUT": [
+        "12",
+        0
+      ],
+      "STRING": "let's make some interesting stuff"
+    },
+    "class_type": "Griptape Display: Text",
+    "_meta": {
+      "title": "Griptape Display: Text"
+    }
+  },
+  "15": {
+    "inputs": {
+      "input_string": [
+        "14",
+        0
+      ],
+      "STRING": "",
+      "max_subtasks": 1,
+      "rulesets": [
+        "13",
+        0
+      ]
+    },
+    "class_type": "Griptape Create: Agent",
+    "_meta": {
+      "title": "Griptape Create: Agent"
+    }
+  },
+  "17": {
+    "inputs": {
+      "INPUT": [
+        "15",
+        0
+      ],
+      "STRING": "A large spherical plush object, its surface a chaotic tapestry of vibrant patchwork textures, each segment a different plush fabric—some soft and velvety, others coarse and shaggy. The sphere is adorned with partially recognizable plush animal limbs protruding at odd angles, their forms blending seamlessly into the body, creating a sense of playful disarray. One limb, a fuzzy rabbit ear, flops lazily over a smooth, iridescent patch, while a tiny, plush paw with oversized claws clings to a segment of bright polka dots. The colors shift from deep, rich blues to electric pinks, creating a mesmerizing gradient that seems to pulse with life. The object floats against a stark black background, casting soft shadows that enhance its surreal presence, inviting viewers to ponder its ambiguous functionality and the whimsical narratives it might embody. The textures evoke a tactile curiosity, with some areas inviting touch while others provoked a sense of unease, blurring the line between comfort and the uncanny."
+    },
+    "class_type": "Griptape Display: Text",
+    "_meta": {
+      "title": "Griptape Display: Text"
+    }
+  },
+  "21": {
+    "inputs": {
+      "text": [
+        "5",
+        0
+      ],
+      "path": "C:\\CODING\\VIBE\\VIBE_Forming\\input\\COMFYINPUTS\\textOptions",
+      "filename_prefix": "A",
+      "filename_delimiter": "_",
+      "filename_number_padding": 4,
+      "file_extension": ".txt",
+      "encoding": "utf-8",
+      "filename_suffix": ""
+    },
+    "class_type": "Save Text File",
+    "_meta": {
+      "title": "Save Text File"
+    }
+  },
+  "22": {
+    "inputs": {
+      "text": [
+        "11",
+        0
+      ],
+      "path": "C:\\CODING\\VIBE\\VIBE_Forming\\input\\COMFYINPUTS\\textOptions",
+      "filename_prefix": "B",
+      "filename_delimiter": "_",
+      "filename_number_padding": 4,
+      "file_extension": ".txt",
+      "encoding": "utf-8",
+      "filename_suffix": ""
+    },
+    "class_type": "Save Text File",
+    "_meta": {
+      "title": "Save Text File"
+    }
+  },
+  "23": {
+    "inputs": {
+      "text": [
+        "17",
+        0
+      ],
+      "path": "C:\\CODING\\VIBE\\VIBE_Forming\\input\\COMFYINPUTS\\textOptions",
+      "filename_prefix": "C",
+      "filename_delimiter": "_",
+      "filename_number_padding": 4,
+      "file_extension": ".txt",
+      "encoding": "utf-8",
+      "filename_suffix": ""
+    },
+    "class_type": "Save Text File",
+    "_meta": {
+      "title": "Save Text File"
+    }
+  },
+  "24": {
+    "inputs": {
+      "pixels": [
+        "27",
+        0
+      ],
+      "vae": [
+        "30",
+        2
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE Encode"
+    }
+  },
+  "25": {
+    "inputs": {
+      "control_net_name": "control-lora-canny-rank256.safetensors"
+    },
+    "class_type": "ControlNetLoader",
+    "_meta": {
+      "title": "Load ControlNet Model"
+    }
+  },
+  "27": {
+    "inputs": {
+      "width": 512,
+      "height": 512,
+      "interpolation": "nearest",
+      "method": "fill / crop",
+      "condition": "always",
+      "multiple_of": 0,
+      "image": [
+        "38",
+        0
+      ]
+    },
+    "class_type": "ImageResize+",
+    "_meta": {
+      "title": "🔧 Image Resize"
+    }
+  },
+  "28": {
+    "inputs": {
+      "coarse": "disable",
+      "resolution": 1024,
+      "image": [
+        "27",
+        0
+      ]
+    },
+    "class_type": "LineArtPreprocessor",
+    "_meta": {
+      "title": "Realistic Lineart"
+    }
+  },
+  "30": {
+    "inputs": {
+      "ckpt_name": "juggernautXL_juggXIByRundiffusion.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  },
+  "32": {
+    "inputs": {
+      "samples": [
+        "45",
+        0
+      ],
+      "vae": [
+        "30",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "33": {
+    "inputs": {
+      "filename_prefix": "output",
+      "images": [
+        "35",
+        0
+      ],
+      "output_path": "C:\\CODING\\VIBE\\VIBE_Forming\\input\\options",
+      "extension": "png",
+      "overwrite_mode": "true"
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "34": {
+    "inputs": {
+      "mode": "base",
+      "use_jit": true
+    },
+    "class_type": "TransparentBGSession+",
+    "_meta": {
+      "title": "🔧 InSPyReNet TransparentBG"
+    }
+  },
+  "35": {
+    "inputs": {
+      "rembg_session": [
+        "34",
+        0
+      ],
+      "image": [
+        "32",
+        0
+      ]
+    },
+    "class_type": "ImageRemoveBackground+",
+    "_meta": {
+      "title": "🔧 Image Remove Background"
+    }
+  },
+  "36": {
+    "inputs": {
+      "lora_name": "ModelMaker-XL.safetensors",
+      "strength_model": 0.5,
+      "strength_clip": 0.5,
+      "model": [
+        "30",
+        0
+      ],
+      "clip": [
+        "30",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  },
+  "38": {
+    "inputs": {
+      "image": "C:\\CODING\\VIBE\\VIBE_Forming\\input\\COMFYINPUTS\\blenderRender\\front.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "43": {
+    "inputs": {
+      "strength": 0.8500000000000002,
+      "start_percent": 0,
+      "end_percent": 0.909,
+      "positive": [
+        "51",
+        0
+      ],
+      "negative": [
+        "86",
+        0
+      ],
+      "control_net": [
+        "25",
+        0
+      ],
+      "image": [
+        "28",
+        0
+      ],
+      "vae": [
+        "30",
+        2
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "Apply ControlNet"
+    }
+  },
+  "45": {
+    "inputs": {
+      "seed": -1,
+      "steps": 8,
+      "cfg": 2.2,
+      "sampler_name": "lcm",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "94",
+        0
+      ],
+      "positive": [
+        "43",
+        0
+      ],
+      "negative": [
+        "43",
+        1
+      ],
+      "latent_image": [
+        "24",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "51": {
+    "inputs": {
+      "STRING": [
+        "5",
+        0
+      ],
+      "clip": [
+        "94",
+        1
+      ]
+    },
+    "class_type": "Griptape Convert: Text to CLIP Encode",
+    "_meta": {
+      "title": "Griptape Convert: Text to CLIP Encode"
+    }
+  },
+  "55": {
+    "inputs": {
+      "width": 512,
+      "height": 512,
+      "interpolation": "nearest",
+      "method": "fill / crop",
+      "condition": "always",
+      "multiple_of": 0,
+      "image": [
+        "38",
+        0
+      ]
+    },
+    "class_type": "ImageResize+",
+    "_meta": {
+      "title": "🔧 Image Resize"
+    }
+  },
+  "56": {
+    "inputs": {
+      "strength": 0.8500000000000002,
+      "start_percent": 0,
+      "end_percent": 0.909,
+      "positive": [
+        "70",
+        0
+      ],
+      "negative": [
+        "86",
+        0
+      ],
+      "control_net": [
+        "25",
+        0
+      ],
+      "image": [
+        "58",
+        0
+      ],
+      "vae": [
+        "30",
+        2
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "Apply ControlNet"
+    }
+  },
+  "58": {
+    "inputs": {
+      "coarse": "enable",
+      "resolution": 1024,
+      "image": [
+        "55",
+        0
+      ]
+    },
+    "class_type": "LineArtPreprocessor",
+    "_meta": {
+      "title": "Realistic Lineart"
+    }
+  },
+  "60": {
+    "inputs": {
+      "samples": [
+        "66",
+        0
+      ],
+      "vae": [
+        "30",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "61": {
+    "inputs": {
+      "mode": "base",
+      "use_jit": true
+    },
+    "class_type": "TransparentBGSession+",
+    "_meta": {
+      "title": "🔧 InSPyReNet TransparentBG"
+    }
+  },
+  "62": {
+    "inputs": {
+      "rembg_session": [
+        "61",
+        0
+      ],
+      "image": [
+        "60",
+        0
+      ]
+    },
+    "class_type": "ImageRemoveBackground+",
+    "_meta": {
+      "title": "🔧 Image Remove Background"
+    }
+  },
+  "63": {
+    "inputs": {
+      "filename_prefix": "2",
+      "images": [
+        "62",
+        0
+      ],
+      "output_path": "C:\\CODING\\VIBE\\VIBE_Forming\\input\\options",
+      "extension": "png",
+      "overwrite_mode": "true"
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "64": {
+    "inputs": {
+      "output_path": "C:\\CODING\\VIBE\\VIBE_Forming\\input\\options",
+      "filename_prefix": "1",
+      "filename_delimiter": "",
+      "filename_number_padding": 0,
+      "filename_number_start": "false",
+      "extension": "png",
+      "dpi": 300,
+      "quality": 100,
+      "optimize_image": "true",
+      "lossless_webp": "false",
+      "overwrite_mode": "true",
+      "show_history": "false",
+      "show_history_by_prefix": "true",
+      "embed_workflow": "true",
+      "show_previews": "true",
+      "images": [
+        "62",
+        0
+      ]
+    },
+    "class_type": "Image Save",
+    "_meta": {
+      "title": "Image Save"
+    }
+  },
+  "66": {
+    "inputs": {
+      "seed": 971170413463735,
+      "steps": 8,
+      "cfg": 2.2,
+      "sampler_name": "lcm",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "94",
+        0
+      ],
+      "positive": [
+        "56",
+        0
+      ],
+      "negative": [
+        "56",
+        1
+      ],
+      "latent_image": [
+        "67",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "67": {
+    "inputs": {
+      "pixels": [
+        "55",
+        0
+      ],
+      "vae": [
+        "30",
+        2
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE Encode"
+    }
+  },
+  "70": {
+    "inputs": {
+      "STRING": [
+        "11",
+        0
+      ],
+      "clip": [
+        "94",
+        1
+      ]
+    },
+    "class_type": "Griptape Convert: Text to CLIP Encode",
+    "_meta": {
+      "title": "Griptape Convert: Text to CLIP Encode"
+    }
+  },
+  "74": {
+    "inputs": {
+      "width": 512,
+      "height": 512,
+      "interpolation": "nearest",
+      "method": "fill / crop",
+      "condition": "always",
+      "multiple_of": 0,
+      "image": [
+        "38",
+        0
+      ]
+    },
+    "class_type": "ImageResize+",
+    "_meta": {
+      "title": "🔧 Image Resize"
+    }
+  },
+  "75": {
+    "inputs": {
+      "strength": 0.8500000000000002,
+      "start_percent": 0,
+      "end_percent": 0.909,
+      "positive": [
+        "89",
+        0
+      ],
+      "negative": [
+        "86",
+        0
+      ],
+      "control_net": [
+        "25",
+        0
+      ],
+      "image": [
+        "77",
+        0
+      ],
+      "vae": [
+        "30",
+        2
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "Apply ControlNet"
+    }
+  },
+  "77": {
+    "inputs": {
+      "coarse": "enable",
+      "resolution": 1024,
+      "image": [
+        "74",
+        0
+      ]
+    },
+    "class_type": "LineArtPreprocessor",
+    "_meta": {
+      "title": "Realistic Lineart"
+    }
+  },
+  "79": {
+    "inputs": {
+      "samples": [
+        "84",
+        0
+      ],
+      "vae": [
+        "30",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "80": {
+    "inputs": {
+      "mode": "base",
+      "use_jit": true
+    },
+    "class_type": "TransparentBGSession+",
+    "_meta": {
+      "title": "🔧 InSPyReNet TransparentBG"
+    }
+  },
+  "81": {
+    "inputs": {
+      "rembg_session": [
+        "80",
+        0
+      ],
+      "image": [
+        "79",
+        0
+      ]
+    },
+    "class_type": "ImageRemoveBackground+",
+    "_meta": {
+      "title": "🔧 Image Remove Background"
+    }
+  },
+  "82": {
+    "inputs": {
+      "filename_prefix": "3",
+      "images": [
+        "81",
+        0
+      ],
+      "output_path": "C:\\CODING\\VIBE\\VIBE_Forming\\input\\options",
+      "extension": "png",
+      "overwrite_mode": "true"
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "83": {
+    "inputs": {
+      "output_path": "C:\\CODING\\VIBE\\VIBE_Forming\\input\\options",
+      "filename_prefix": "2",
+      "filename_delimiter": "",
+      "filename_number_padding": 0,
+      "filename_number_start": "false",
+      "extension": "png",
+      "dpi": 300,
+      "quality": 100,
+      "optimize_image": "true",
+      "lossless_webp": "false",
+      "overwrite_mode": "true",
+      "show_history": "false",
+      "show_history_by_prefix": "true",
+      "embed_workflow": "true",
+      "show_previews": "true",
+      "images": [
+        "81",
+        0
+      ]
+    },
+    "class_type": "Image Save",
+    "_meta": {
+      "title": "Image Save"
+    }
+  },
+  "84": {
+    "inputs": {
+      "seed": 971170413463735,
+      "steps": 8,
+      "cfg": 2.2,
+      "sampler_name": "lcm",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "94",
+        0
+      ],
+      "positive": [
+        "75",
+        0
+      ],
+      "negative": [
+        "75",
+        1
+      ],
+      "latent_image": [
+        "85",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "85": {
+    "inputs": {
+      "pixels": [
+        "74",
+        0
+      ],
+      "vae": [
+        "30",
+        2
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE Encode"
+    }
+  },
+  "86": {
+    "inputs": {
+      "text": "text,base, podium, turntable, watermark, perspective, (low quality:1.5), distorted, out of focus, ugly, footpath, waterfall, saturated, lively, blurry, distorted, low quality, oversaturated, noisy, washed out, pixelated, cluttered, unnatural lighting, deformed, symmetrical, simplistic, hanging, thread, string, tentacles, base, saturated, feathers, angel, plants\n\n\n\n\n\n\n\n\n",
+      "clip": [
+        "94",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "89": {
+    "inputs": {
+      "STRING": [
+        "17",
+        0
+      ],
+      "clip": [
+        "94",
+        1
+      ]
+    },
+    "class_type": "Griptape Convert: Text to CLIP Encode",
+    "_meta": {
+      "title": "Griptape Convert: Text to CLIP Encode"
+    }
+  },
+  "93": {
+    "inputs": {
+      "output_path": "C:\\CODING\\VIBE\\VIBE_Forming\\input\\options",
+      "filename_prefix": "3",
+      "filename_delimiter": "",
+      "filename_number_padding": 0,
+      "filename_number_start": "false",
+      "extension": "png",
+      "dpi": 300,
+      "quality": 100,
+      "optimize_image": "true",
+      "lossless_webp": "false",
+      "overwrite_mode": "true",
+      "show_history": "false",
+      "show_history_by_prefix": "true",
+      "embed_workflow": "true",
+      "show_previews": "true",
+      "images": [
+        "35",
+        0
+      ]
+    },
+    "class_type": "Image Save",
+    "_meta": {
+      "title": "Image Save"
+    }
+  },
+  "94": {
+    "inputs": {
+      "lora_name": "pytorch_lora_weights.safetensors",
+      "strength_model": 0.9900000000000002,
+      "strength_clip": 0.9900000000000002,
+      "model": [
+        "30",
+        0
+      ],
+      "clip": [
+        "30",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  }
+}
