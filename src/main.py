@@ -251,8 +251,10 @@ class OBJECT_OT_generate_iteration(bpy.types.Operator):
         # Check if there's an active selection first
         active_obj = context.active_object
         if not active_obj or active_obj.type != 'MESH':
-            self.report({'ERROR'}, "Please select a mesh object before generating a new iteration")
-            return {'CANCELLED'}
+            # Instead of cancelling, just log a warning and continue
+            self.report({'WARNING'}, "No active mesh found. Proceeding without active mesh reference.")
+            logging.warning("No active mesh found. Proceeding without active mesh reference.")
+            # Continue with the operation instead of returning CANCELLED
             
         # Step 1: Render multi-view images
         logging.info("Starting new iteration generation...")
@@ -430,17 +432,28 @@ def import_generated_mesh():
         
         # Check if there's an active selection first
         active_obj = bpy.context.active_object
-        if not active_obj or active_obj.type != 'MESH':
-            logging.warning("No active mesh object selected. Please select an object before importing.")
-            return False
+        has_active_mesh = active_obj and active_obj.type == 'MESH'
+        
+        # Initialize previous_obj and previous dimensions
+        previous_obj = None
+        previous_max_dim = 1.0  # Default if no previous object
+        previous_x_larger_than_y = True  # Default orientation assumption
+        
+        if has_active_mesh:
+            # Store the reference to the previously active object
+            previous_obj = active_obj
             
-        # Store the reference to the previously active object
-        previous_obj = active_obj
-        
-        # Get the max dimension of the previous object
-        previous_max_dim = max(previous_obj.dimensions.x, previous_obj.dimensions.y, previous_obj.dimensions.z)
-        logging.info(f"Previous object max dimension: {previous_max_dim}")
-        
+            # Get the max dimension of the previous object
+            previous_max_dim = max(previous_obj.dimensions.x, previous_obj.dimensions.y, previous_obj.dimensions.z)
+            
+            # Store which dimension is larger (x or y)
+            previous_x_larger_than_y = previous_obj.dimensions.x >= previous_obj.dimensions.y
+            
+            logging.info(f"Previous object max dimension: {previous_max_dim}")
+            logging.info(f"Previous object X > Y: {previous_x_larger_than_y}")
+        else:
+            logging.warning("No active mesh found. Importing without hiding any mesh.")
+            
         # Deselect all objects
         bpy.ops.object.select_all(action='DESELECT')
         
@@ -542,10 +555,11 @@ def import_generated_mesh():
             bpy.data.objects.remove(empty, do_unlink=True)
             logging.info(f"Removed empty container: {empty.name}")
         
-        # Hide the previous object
-        previous_obj.hide_viewport = True
-        previous_obj.hide_render = True
-        logging.info(f"Hidden previous object: {previous_obj.name}")
+        # Hide the previous object if it exists
+        if has_active_mesh and previous_obj:
+            previous_obj.hide_viewport = True
+            previous_obj.hide_render = True
+            logging.info(f"Hidden previous object: {previous_obj.name}")
         
         # Set the main mesh as active
         bpy.context.view_layer.objects.active = main_mesh
@@ -562,7 +576,13 @@ def import_generated_mesh():
         logging.info(f"Current mesh max dimension: {current_max_dim}")
         
         if current_max_dim > 0:
-            scale_factor = previous_max_dim / current_max_dim
+            # If a previous object exists, use its dimensions for scaling
+            if has_active_mesh and previous_obj:
+                scale_factor = previous_max_dim / current_max_dim
+            else:
+                # Default scaling if no previous object
+                scale_factor = 1.0 / current_max_dim  # Scale to unit size
+                
             logging.info(f"Calculated scale factor: {scale_factor}")
             
             # Apply scaling to main mesh and its children
@@ -570,7 +590,25 @@ def import_generated_mesh():
             
             # Apply the scale
             bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-            logging.info(f"Applied scaling factor {scale_factor} to match previous object dimension")
+            logging.info(f"Applied scaling factor {scale_factor}")
+            
+            # Check if we need to rotate the model based on X and Y dimensions
+            current_x_larger_than_y = main_mesh.dimensions.x >= main_mesh.dimensions.y
+            
+            # If previous object exists and dimension orientation doesn't match
+            if has_active_mesh and previous_obj and (current_x_larger_than_y != previous_x_larger_than_y):
+                logging.info("X/Y dimension orientation mismatch detected, rotating object 45 degrees")
+                
+                # Rotate 45 degrees counterclockwise around Z axis
+                # Convert degrees to radians (45 degrees = π/4 radians)
+                rotation_angle = math.radians(45)
+                
+                # Rotate the object
+                main_mesh.rotation_euler.z += rotation_angle
+                
+                # Apply the rotation
+                bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
+                logging.info("Applied 45 degree counterclockwise rotation")
         else:
             logging.warning("Imported mesh has zero dimensions, couldn't scale properly")
         

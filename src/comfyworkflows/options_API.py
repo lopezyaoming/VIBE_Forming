@@ -27,26 +27,72 @@ def queue_prompt(prompt):
     """Send a prompt to the ComfyUI server"""
     try:
         # Modify the workflow to prevent caching
-        prompt["45"]["inputs"]["seed"] = random.randint(0, 999999999)  # Random seed for KSampler
+        if "45" in prompt and "inputs" in prompt["45"]:
+            prompt["45"]["inputs"]["seed"] = random.randint(0, 999999999)  # Random seed for KSampler
         
-        # Set consistent filename prefixes without timestamps
-        prompt["33"]["inputs"]["filename_prefix"] = "A"  # First output
-        prompt["63"]["inputs"]["filename_prefix"] = "B"  # Second output
-        prompt["82"]["inputs"]["filename_prefix"] = "C"  # Third output
+        if "66" in prompt and "inputs" in prompt["66"]:
+            prompt["66"]["inputs"]["seed"] = random.randint(0, 999999999)  # Second KSampler
+            
+        if "84" in prompt and "inputs" in prompt["84"]:
+            prompt["84"]["inputs"]["seed"] = random.randint(0, 999999999)  # Third KSampler
         
-        # Explicitly update all save paths and ensure overwrite is enabled
-        save_nodes = ['33', '63', '82', '64', '83', '93']
-        for node_id in save_nodes:
+        # Set consistent filename prefixes without timestamps for image saves
+        save_nodes = {
+            '33': 'A',  # First output SaveImage
+            '63': 'B',  # Second output SaveImage
+            '82': 'C',  # Third output SaveImage
+            '93': 'A',  # First output Image Save
+            '64': 'B',  # Second output Image Save
+            '83': 'C'   # Third output Image Save
+        }
+        
+        # Update save nodes
+        for node_id, prefix in save_nodes.items():
             if node_id in prompt and 'inputs' in prompt[node_id]:
+                # Set filename prefix
+                if 'filename_prefix' in prompt[node_id]['inputs']:
+                    prompt[node_id]['inputs']['filename_prefix'] = prefix
+                    print(f"Set node {node_id} filename prefix to: {prefix}")
+                
+                # Set output path
                 if 'output_path' in prompt[node_id]['inputs']:
                     prompt[node_id]['inputs']['output_path'] = OUTPUT_DIR
                     print(f"Set node {node_id} output path to: {OUTPUT_DIR}")
                 
                 # Make sure overwrite mode is enabled
                 if 'overwrite_mode' in prompt[node_id]['inputs']:
-                    prompt[node_id]['inputs']['overwrite_mode'] = "true"
-                    print(f"Enabled overwrite mode for node {node_id}")
+                    # Use "prefix_as_filename" for Image Save nodes instead of "true"
+                    prompt[node_id]['inputs']['overwrite_mode'] = "prefix_as_filename"
+                    print(f"Set overwrite mode for node {node_id} to prefix_as_filename")
         
+        # Update text file save nodes
+        text_save_nodes = {
+            '21': 'A',  # First text file
+            '22': 'B',  # Second text file
+            '23': 'C'   # Third text file
+        }
+        
+        for node_id, prefix in text_save_nodes.items():
+            if node_id in prompt and 'inputs' in prompt[node_id]:
+                # Set path to proper directory
+                if 'path' in prompt[node_id]['inputs']:
+                    prompt[node_id]['inputs']['path'] = TEXT_OPTIONS_DIR
+                    print(f"Set node {node_id} text path to: {TEXT_OPTIONS_DIR}")
+                
+                # Set filename prefix
+                if 'filename_prefix' in prompt[node_id]['inputs']:
+                    prompt[node_id]['inputs']['filename_prefix'] = prefix
+                    print(f"Set node {node_id} filename prefix to: {prefix}")
+        
+        # Add random dictionary_name to force reload of text files
+        if "102" in prompt and "inputs" in prompt["102"]:
+            if "dictionary_name" in prompt["102"]["inputs"]:
+                timestamp = int(time.time())
+                original_dict_name = prompt["102"]["inputs"]["dictionary_name"]
+                prompt["102"]["inputs"]["dictionary_name"] = f"{original_dict_name}_{timestamp}"
+                print(f"Added timestamp to dictionary_name to force reload: {prompt['102']['inputs']['dictionary_name']}")
+        
+        # Queue the prompt
         p = {"prompt": prompt, "client_id": client_id}
         data = json.dumps(p).encode('utf-8')
         req = urllib.request.Request(f"http://{server_address}/prompt", data=data)
@@ -182,7 +228,7 @@ def main():
     try:
         # Get the absolute path to the JSON file
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        json_path = os.path.join(current_dir, "VIBEOptions.json")
+        json_path = os.path.join(current_dir, "OptionsFINAL1.json")
         
         print(f"Attempting to load JSON file from: {json_path}")
         with open(json_path, "r", encoding="utf-8") as f:
@@ -195,6 +241,13 @@ def main():
             if node_id in workflow and 'inputs' in workflow[node_id] and 'output_path' in workflow[node_id]['inputs']:
                 workflow[node_id]['inputs']['output_path'] = OUTPUT_DIR
                 print(f"Updated output path for node {node_id}")
+                
+        # Update text file save paths
+        text_nodes = ['21', '22', '23']
+        for node_id in text_nodes:
+            if node_id in workflow and 'inputs' in workflow[node_id] and 'path' in workflow[node_id]['inputs']:
+                workflow[node_id]['inputs']['path'] = TEXT_OPTIONS_DIR
+                print(f"Updated text path for node {node_id}")
                 
     except Exception as e:
         print(f"Error loading workflow file: {str(e)}")
@@ -231,9 +284,15 @@ def main():
                     if "64" in outputs and "text" in outputs["64"]:
                         prompt_texts['A'] = outputs["64"]["text"]
                     if "83" in outputs and "text" in outputs["83"]:
-                        prompt_texts['B'] = outputs["64"]["text"]
+                        prompt_texts['B'] = outputs["83"]["text"]
                     if "93" in outputs and "text" in outputs["93"]:
-                        prompt_texts['C'] = outputs["64"]["text"]
+                        prompt_texts['C'] = outputs["93"]["text"]
+                    
+                    # Also extract from text file nodes (21, 22, 23)
+                    text_node_mapping = {'21': 'A', '22': 'B', '23': 'C'}
+                    for node_id, letter in text_node_mapping.items():
+                        if node_id in outputs and "text" in outputs[node_id]:
+                            prompt_texts[letter] = outputs[node_id]["text"]
                     
                     # Check if all image nodes have completed
                     all_nodes_done = True
@@ -347,7 +406,19 @@ def main():
             
             # Check if we have any prompt texts and save them with simpler naming
             for letter in ['A', 'B', 'C']:
-                # Look for traditional naming format first
+                # First check if we have text from the history outputs
+                if letter in prompt_texts and prompt_texts[letter]:
+                    print(f"Saving prompt text for {letter} from history data")
+                    save_prompt_text(letter, prompt_texts[letter])
+                    
+                    # Also update prompt.txt with the content of option A by default
+                    if letter == 'A':
+                        with open(PROMPT_FILE, 'w', encoding='utf-8') as f:
+                            f.write(prompt_texts[letter])
+                        print(f"Updated {PROMPT_FILE} with content from option A")
+                    continue
+                
+                # Look for traditional naming format as fallback
                 old_format_path = os.path.join(TEXT_OPTIONS_DIR, f"{letter}_0001.txt")
                 if os.path.exists(old_format_path):
                     try:
@@ -365,15 +436,6 @@ def main():
                             
                     except Exception as e:
                         print(f"Error processing prompt text for {letter}: {e}")
-                # Also check if we got the text directly from history data
-                elif letter in prompt_texts and prompt_texts[letter]:
-                    save_prompt_text(letter, prompt_texts[letter])
-                    
-                    # Also update prompt.txt with the content of option A by default
-                    if letter == 'A':
-                        with open(PROMPT_FILE, 'w', encoding='utf-8') as f:
-                            f.write(prompt_texts[letter])
-                        print(f"Updated {PROMPT_FILE} with content from option A")
                 
         else:
             print(f"\nOutput directory {OUTPUT_DIR} does not exist!")

@@ -177,7 +177,7 @@
         "5",
         0
       ],
-      "path": "C:\\CODING\\VIBE\\VIBE_Massing\\input\\COMFYINPUTS\\textOptions",
+      "path": "C:\\CODING\\VIBE\\VIBE_Forming\\input\\COMFYINPUTS\\textOptions",
       "filename_prefix": "A",
       "filename_delimiter": "_",
       "filename_number_padding": 4,
@@ -196,7 +196,7 @@
         "11",
         0
       ],
-      "path": "C:\\CODING\\VIBE\\VIBE_Massing\\input\\COMFYINPUTS\\textOptions",
+      "path": "C:\\CODING\\VIBE\\VIBE_Forming\\input\\COMFYINPUTS\\textOptions",
       "filename_prefix": "B",
       "filename_delimiter": "_",
       "filename_number_padding": 4,
@@ -215,7 +215,7 @@
         "17",
         0
       ],
-      "path": "C:\\CODING\\VIBE\\VIBE_Massing\\input\\COMFYINPUTS\\textOptions",
+      "path": "C:\\CODING\\VIBE\\VIBE_Forming\\input\\COMFYINPUTS\\textOptions",
       "filename_prefix": "C",
       "filename_delimiter": "_",
       "filename_number_padding": 4,
@@ -522,7 +522,7 @@
   },
   "64": {
     "inputs": {
-      "output_path": "C:\\CODING\\VIBE\\VIBE_Massing\\input\\COMFYINPUTS\\ImageOPTIONS",
+      "output_path": "C:\\CODING\\VIBE\\VIBE_Forming\\input\\COMFYINPUTS\\ImageOPTIONS",
       "filename_prefix": "B",
       "filename_delimiter": "_",
       "filename_number_padding": 4,
@@ -532,7 +532,7 @@
       "quality": 100,
       "optimize_image": "true",
       "lossless_webp": "false",
-      "overwrite_mode": "false",
+      "overwrite_mode": "prefix_as_filename",
       "show_history": "false",
       "show_history_by_prefix": "true",
       "embed_workflow": "true",
@@ -703,7 +703,7 @@
   },
   "83": {
     "inputs": {
-      "output_path": "C:\\CODING\\VIBE\\VIBE_Massing\\input\\COMFYINPUTS\\ImageOPTIONS",
+      "output_path": "C:\\CODING\\VIBE\\VIBE_Forming\\input\\COMFYINPUTS\\ImageOPTIONS",
       "filename_prefix": "C",
       "filename_delimiter": "_",
       "filename_number_padding": 4,
@@ -713,7 +713,7 @@
       "quality": 100,
       "optimize_image": "true",
       "lossless_webp": "false",
-      "overwrite_mode": "false",
+      "overwrite_mode": "prefix_as_filename",
       "show_history": "false",
       "show_history_by_prefix": "true",
       "embed_workflow": "true",
@@ -805,7 +805,7 @@
   },
   "93": {
     "inputs": {
-      "output_path": "C:\\CODING\\VIBE\\VIBE_Massing\\input\\COMFYINPUTS\\ImageOPTIONS",
+      "output_path": "C:\\CODING\\VIBE\\VIBE_Forming\\input\\COMFYINPUTS\\ImageOPTIONS",
       "filename_prefix": "A",
       "filename_delimiter": "_",
       "filename_number_padding": 4,
@@ -815,7 +815,7 @@
       "quality": 100,
       "optimize_image": "true",
       "lossless_webp": "false",
-      "overwrite_mode": "false",
+      "overwrite_mode": "prefix_as_filename",
       "show_history": "false",
       "show_history_by_prefix": "true",
       "embed_workflow": "true",

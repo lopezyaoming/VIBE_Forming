@@ -42,23 +42,34 @@ def check_comfyui_server():
 def queue_prompt(prompt):
     """Send a prompt to the ComfyUI server"""
     try:
-        # Modify the workflow to prevent caching
-        if "45" in prompt and "inputs" in prompt["45"]:
-            prompt["45"]["inputs"]["seed"] = random.randint(0, 999999999)  # Random seed for KSampler
-        else:
-            print("Warning: Node 45 not found for setting random seed")
+        # Modify the workflow to prevent caching - set random seeds for all KSamplers
+        sampler_nodes = ["3", "25", "35", "147"]  # Updated KSampler node IDs for MultiViewFINAL1
+        for node_id in sampler_nodes:
+            if node_id in prompt and "inputs" in prompt[node_id]:
+                prompt[node_id]["inputs"]["seed"] = random.randint(0, 999999999)
+                print(f"Set random seed for KSampler node {node_id}")
         
         # Ensure consistent filename for export nodes without timestamps
-        if "76" in prompt and "inputs" in prompt["76"]:  # Hy3DExportMesh node
-            if "filename_prefix" in prompt["76"]["inputs"]:
-                prompt["76"]["inputs"]["filename_prefix"] = "model"  # Consistent name for 3D model
+        if "123" in prompt and "inputs" in prompt["123"]:  # Hy3DExportMesh node
+            if "filename_prefix" in prompt["123"]["inputs"]:
+                prompt["123"]["inputs"]["filename_prefix"] = "model"  # Consistent name for 3D model
+                print("Set consistent filename prefix for 3D model export node")
                 
-            # Make sure overwrite mode is enabled if available
-            if "overwrite_mode" in prompt["76"]["inputs"]:
-                prompt["76"]["inputs"]["overwrite_mode"] = "true"
-                print("Enabled overwrite mode for 3D model export node")
+            # Make sure file_format is set to glb
+            if "file_format" in prompt["123"]["inputs"]:
+                prompt["123"]["inputs"]["file_format"] = "glb"
+                print("Set file format to glb for 3D model export node")
+                
+            # Set output path if missing
+            if "output_path" not in prompt["123"]["inputs"]:
+                prompt["123"]["inputs"]["output_path"] = TARGET_OUTPUT
+                print(f"Set output path to {TARGET_OUTPUT} for 3D model export node")
+                
+            # Ensure save_file is enabled
+            prompt["123"]["inputs"]["save_file"] = True
+            print("Enabled save_file for 3D model export node")
         else:
-            print("Warning: Node 76 (3D export node) not found in workflow")
+            print("Warning: Node 123 (3D export node) not found in workflow")
         
         # Force reload of the text file by updating dictionary_name parameter
         prompt_txt_path = os.path.join("C:\\CODING\\VIBE\\VIBE_Forming\\input\\COMFYINPUTS\\textOptions", "prompt.txt")
@@ -86,19 +97,19 @@ def queue_prompt(prompt):
         else:
             print("Warning: Node 102 (Load Text File node) not found in workflow")
         
-        # Check other save nodes and set overwrite mode
-        save_nodes = ['33', '63', '82', '64', '83', '93', '76']
-        for node_id in save_nodes:
-            if node_id in prompt and 'inputs' in prompt[node_id]:
-                if 'output_path' in prompt[node_id]['inputs']:
-                    prompt[node_id]['inputs']['output_path'] = TARGET_OUTPUT
-                    print(f"Set node {node_id} output path to: {TARGET_OUTPUT}")
-                
-                # Make sure overwrite mode is enabled
-                if 'overwrite_mode' in prompt[node_id]['inputs']:
-                    prompt[node_id]['inputs']['overwrite_mode'] = "true"
-                    print(f"Enabled overwrite mode for node {node_id}")
+        # Set Hy3DGenerateMeshMultiView parameters
+        if "161" in prompt and "inputs" in prompt["161"]:  # Updated node ID for MultiViewFINAL1
+            # Set a random seed for mesh generation
+            prompt["161"]["inputs"]["seed"] = random.randint(0, 999999999)
+            print(f"Set random seed for Hy3DGenerateMeshMultiView node")
+            
+            # Ensure proper scheduler and guidance scale
+            prompt["161"]["inputs"]["scheduler"] = "FlowMatchEulerDiscreteScheduler"
+            prompt["161"]["inputs"]["steps"] = 30
+            prompt["161"]["inputs"]["guidance_scale"] = 5.5
+            print("Set optimal mesh generation parameters")
         
+        # Queue the prompt
         p = {"prompt": prompt, "client_id": client_id}
         data = json.dumps(p).encode('utf-8')
         
@@ -185,7 +196,7 @@ def main():
     
     # Get the absolute path to the JSON file
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    json_path = os.path.join(current_dir, "VIBEMultiView.json")
+    json_path = os.path.join(current_dir, "MultiViewFINAL1.json")
     
     print(f"Looking for JSON file at: {json_path}")
     
@@ -201,7 +212,7 @@ def main():
         
         # Print key nodes for debugging
         print(f"Workflow has {len(workflow)} nodes")
-        important_nodes = ['76', '84']  # 3D mesh export related nodes
+        important_nodes = ['123', '190', '161']  # 3D mesh export and preview nodes
         for node in important_nodes:
             if node in workflow:
                 print(f"Found node {node}: {workflow[node]['class_type']}")
@@ -290,8 +301,8 @@ def main():
             print(f"Found {len(outputs)} output nodes")
             
             # Check for 3D mesh output and copy it to target location
-            if '84' in outputs and 'model_file' in outputs['84']:
-                model_file = outputs['84']['model_file']
+            if '123' in outputs and 'model_file' in outputs['123']:
+                model_file = outputs['123']['model_file']
                 print(f"Mesh generation completed, file: {model_file}")
                 
                 if copy_mesh_to_target(COMFYUI_OUTPUT, TARGET_OUTPUT):
@@ -300,10 +311,10 @@ def main():
                     print("Failed to copy mesh to target location")
                     sys.exit(1)
             else:
-                print("No mesh was generated in this execution")
+                print("No mesh was generated in the expected output nodes")
                 print("Available output nodes:", list(outputs.keys()))
                 
-                # Check if any GLB file was generated despite missing node 84
+                # Check if any GLB file was generated despite missing the expected nodes
                 if copy_mesh_to_target(COMFYUI_OUTPUT, TARGET_OUTPUT):
                     print("Found and copied a mesh file anyway")
                 else:

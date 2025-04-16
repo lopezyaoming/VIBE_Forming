@@ -560,7 +560,7 @@
   },
   "123": {
     "inputs": {
-      "filename_prefix": "3D/Hy3D",
+      "filename_prefix": "model",
       "file_format": "glb",
       "save_file": true,
       "trimesh": [
