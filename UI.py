@@ -7,11 +7,12 @@ import threading
 import random
 import shutil
 import io
+import socket
 from pathlib import Path
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
     QPushButton, QLabel, QLineEdit, QGraphicsOpacityEffect, 
-    QGraphicsDropShadowEffect, QSizePolicy, QFrame, QDesktopWidget
+    QGraphicsDropShadowEffect, QSizePolicy, QFrame, QDesktopWidget, QMessageBox
 )
 from PyQt5.QtCore import Qt, QSize, QPropertyAnimation, QTimer, QUrl, pyqtSignal, QThread
 from PyQt5.QtGui import QFont, QColor, QPalette, QImage, QPixmap, QCursor, QPainter, QBrush, QFontDatabase
@@ -24,6 +25,22 @@ TEXTOPT_DIR = os.path.join(BASE_DIR, "input", "COMFYINPUTS", "textOptions")
 INPUT_TEXT_FILE = os.path.join(BASE_DIR, "input", "input.txt")
 OPTIONS_API_SCRIPT = os.path.join(BASE_DIR, "src", "comfyworkflows", "options_API.py")
 MULTIVIEW_API_SCRIPT = os.path.join(BASE_DIR, "src", "comfyworkflows", "multiview_API.py")
+BLENDER_RENDER_DIR = os.path.join(BASE_DIR, "input", "COMFYINPUTS", "blenderRender")
+BLENDER_SCRIPT_PATH = os.path.join(BASE_DIR, "src", "main.py")
+
+# Common Blender installation locations to check
+BLENDER_INSTALL_PATHS = [
+    r"C:\Program Files\Blender Foundation\Blender 3.6\blender.exe",
+    r"C:\Program Files\Blender Foundation\Blender 3.5\blender.exe",
+    r"C:\Program Files\Blender Foundation\Blender 3.4\blender.exe",
+    r"C:\Program Files\Blender Foundation\Blender 3.3\blender.exe",
+    r"C:\Program Files\Blender Foundation\Blender 3.2\blender.exe",
+    r"C:\Program Files\Blender Foundation\Blender 3.1\blender.exe",
+    r"C:\Program Files\Blender Foundation\Blender 3.0\blender.exe",
+    r"C:\Program Files\Blender Foundation\Blender 2.93\blender.exe",
+    r"C:\Program Files\Blender Foundation\Blender 2.92\blender.exe",
+    # Add more potential paths as needed
+]
 
 # Ensure all necessary directories exist
 for path in [OPTIONS_DIR, OUTPUT_DIR, TEXTOPT_DIR]:
@@ -83,6 +100,47 @@ class ScriptRunner(QThread):
                 self.finished.emit(True, "Script completed successfully")
             else:
                 self.finished.emit(False, f"Script failed: {stderr}")
+                
+        except Exception as e:
+            self.finished.emit(False, f"Error: {str(e)}")
+
+# Custom BlenderRenderThread for executing Blender in the background
+class BlenderRenderThread(QThread):
+    finished = pyqtSignal(bool, str)
+    progress = pyqtSignal(str)
+    
+    def __init__(self, script_path, blender_path="blender"):
+        super().__init__()
+        self.script_path = script_path
+        self.blender_path = blender_path
+        
+    def run(self):
+        try:
+            self.progress.emit("Starting Blender render...")
+            
+            # Start the Blender process
+            process = subprocess.Popen(
+                [self.blender_path, "--background", "--python", self.script_path],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            
+            # Monitor output
+            while process.poll() is None:
+                stdout_line = process.stdout.readline()
+                if stdout_line:
+                    self.progress.emit(stdout_line.strip())
+                
+            # Get any remaining output
+            stdout, stderr = process.communicate()
+            if stdout:
+                self.progress.emit(stdout.strip())
+                
+            if process.returncode == 0:
+                self.finished.emit(True, "Blender render completed successfully")
+            else:
+                self.finished.emit(False, f"Blender render failed: {stderr}")
                 
         except Exception as e:
             self.finished.emit(False, f"Error: {str(e)}")
@@ -173,17 +231,6 @@ class ImageFrame(QFrame):
         self.image_label.setStyleSheet("background: transparent;")
         layout.addWidget(self.image_label)
         
-        # Add option label
-        self.option_label = QLabel(option, self)
-        self.option_label.setAlignment(Qt.AlignCenter)
-        self.option_label.setStyleSheet("""
-            color: white;
-            background: transparent;
-            font-size: 16px;
-            padding: 5px;
-        """)
-        layout.addWidget(self.option_label)
-        
         # Add drop shadow effect
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(15)
@@ -272,6 +319,29 @@ class TransparentWindow(QMainWindow):
         main_layout.setSpacing(20)  # Reduced spacing
         main_layout.setAlignment(Qt.AlignCenter)
         
+        # Add discrete terminate button in top-left corner
+        terminate_button = MinimalButton("×")
+        terminate_button.setFixedSize(26, 26)
+        terminate_button.clicked.connect(self.terminate_script)
+        terminate_button.setStyleSheet("""
+            QPushButton {
+                background-color: rgba(40, 40, 40, 150);
+                color: rgba(220, 220, 220, 180);
+                border: none;
+                border-radius: 13px;
+                font-size: 18px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: rgba(80, 40, 40, 180);
+                color: white;
+            }
+        """)
+        
+        # Position the terminate button in the top-left corner
+        terminate_button.setParent(self)
+        terminate_button.move(15, 15)
+        
         # Create images container - vertical orientation
         images_container = QWidget()
         images_layout = QVBoxLayout(images_container)
@@ -358,14 +428,46 @@ class TransparentWindow(QMainWindow):
     def load_images(self):
         """Load or refresh the option images"""
         successful_loads = 0
+        print("------- Starting image refresh -------")
+        
         for option in ["A", "B", "C"]:
             try:
                 image_path = os.path.join(OPTIONS_DIR, f"{option}.png")
+                print(f"Checking image {option}.png at {image_path}")
                 
-                # First, verify the PNG file integrity
+                # Check if file exists first (most basic check)
+                if not os.path.exists(image_path):
+                    print(f"Image {option}.png does not exist")
+                    self.status_label.setText(f"Image {option}.png not found")
+                    continue
+                    
+                # Check file size before validation
+                file_size = os.path.getsize(image_path)
+                if file_size == 0:
+                    print(f"Image {option}.png exists but is empty (0 bytes)")
+                    self.status_label.setText(f"Image {option}.png exists but is empty")
+                    continue
+                    
+                print(f"Image {option}.png exists with size {file_size} bytes")
+                
+                # Wait a moment in case file is still being written
+                time.sleep(0.1)
+                
+                # Try to load the image even if PNG validation fails
+                try:
+                    # First try direct loading to see if it works without validation
+                    self.pixmap = QPixmap(image_path)
+                    if not self.pixmap.isNull():
+                        print(f"Successfully loaded {option}.png directly")
+                        self.image_frames[option].load_image(image_path)
+                        successful_loads += 1
+                        continue
+                except Exception as e:
+                    print(f"Direct loading of {option}.png failed: {str(e)}")
+                
+                # Try using our validation and loading approach as backup
                 if not is_valid_png(image_path):
-                    print(f"Image {option}.png is not a valid PNG file")
-                    self.status_label.setText(f"Image {option}.png is invalid or corrupted")
+                    print(f"Image {option}.png failed PNG validation")
                     
                     # Try to find a backup or alternative file
                     alt_path = os.path.join(OPTIONS_DIR, f"{option}_backup.png")
@@ -373,33 +475,66 @@ class TransparentWindow(QMainWindow):
                         print(f"Using backup image for {option}")
                         image_path = alt_path
                     else:
-                        continue  # Skip this image
-                
-                # Check file size and existence before loading
-                if os.path.exists(image_path):
-                    file_size = os.path.getsize(image_path)
-                    if file_size == 0:
-                        self.status_label.setText(f"Image {option}.png exists but is empty")
+                        # Try loading with more lenient approach
+                        if self.try_load_image_lenient(option, image_path):
+                            successful_loads += 1
                         continue
-                        
-                    # Wait for file to be fully written
-                    time.sleep(0.1)
-                    
-                    if self.image_frames[option].load_image(image_path):
-                        successful_loads += 1
-                    else:
-                        self.status_label.setText(f"Failed to load image {option}.png")
+                
+                # Try to load the image
+                if self.image_frames[option].load_image(image_path):
+                    print(f"Successfully loaded {option}.png via normal method")
+                    successful_loads += 1
                 else:
-                    print(f"Image not found: {image_path}")
+                    self.status_label.setText(f"Failed to load image {option}.png")
+                    print(f"Failed to load {option}.png via normal method")
             except Exception as e:
+                print(f"Exception loading {option}.png: {str(e)}")
                 self.status_label.setText(f"Error loading {option}.png: {str(e)}")
                 
+        print(f"Successfully loaded {successful_loads} images")
         if successful_loads > 0:
             self.status_label.setText(f"Loaded {successful_loads} images successfully")
             
+    def try_load_image_lenient(self, option, image_path):
+        """Try to load image even if validation fails"""
+        try:
+            # Make a direct pixmap load attempt with no validation
+            pixmap = QPixmap(image_path)
+            if not pixmap.isNull():
+                # Directly set the pixmap to the image frame
+                self.image_frames[option].image_path = image_path
+                self.image_frames[option].pixmap = pixmap
+                self.image_frames[option].image_label.setPixmap(pixmap.scaled(
+                    220, 220, Qt.KeepAspectRatio, Qt.SmoothTransformation
+                ))
+                print(f"Successfully loaded {option}.png with lenient method")
+                return True
+        except Exception as e:
+            print(f"Lenient loading also failed for {option}.png: {str(e)}")
+        return False
+        
     def select_option(self, option):
         """Handle option selection - double click"""
         try:
+            # First check if ComfyUI is running
+            if not check_comfyui_running():
+                self.show_error_dialog(
+                    "ComfyUI Not Running", 
+                    "ComfyUI server is not running.",
+                    "Please start ComfyUI and try again."
+                )
+                return
+                
+            # Check if workflow files exist
+            missing_files = verify_comfyui_workflows()
+            if missing_files:
+                self.show_error_dialog(
+                    "Missing Workflow Files",
+                    "The following workflow files are missing:",
+                    "\n".join(missing_files)
+                )
+                return
+                
             # Save selection to output directory
             with open(os.path.join(OUTPUT_DIR, "selected_option.txt"), "w") as f:
                 f.write(f"Selected Option: {option}\n")
@@ -454,26 +589,174 @@ class TransparentWindow(QMainWindow):
             return
             
         try:
+            # Check if ComfyUI is running first
+            if not check_comfyui_running():
+                self.show_error_dialog(
+                    "ComfyUI Not Running", 
+                    "ComfyUI server is not running.",
+                    "Please start ComfyUI and try again."
+                )
+                return
+                
+            # Check if workflow files exist
+            missing_files = verify_comfyui_workflows()
+            if missing_files:
+                self.show_error_dialog(
+                    "Missing Workflow Files",
+                    "The following workflow files are missing:",
+                    "\n".join(missing_files)
+                )
+                return
+                
             # Write prompt to input.txt
             with open(INPUT_TEXT_FILE, "w", encoding="utf-8") as f:
                 f.write(prompt)
                 
             # Change the status and button
-            self.status_label.setText("Generating images...")
+            self.status_label.setText("Triggering Blender render...")
             self.submit_btn.setEnabled(False)
             self.submit_btn.setText("Processing...")
             
-            # Create worker thread
-            self.worker = ScriptRunner(OPTIONS_API_SCRIPT)
-            self.worker.progress.connect(self.update_status)
-            self.worker.finished.connect(self.handle_completion)
-            self.worker.start()
+            # First run the render_multiview function from main.py using a background thread
+            self.trigger_blender_render()
             
         except Exception as e:
             self.status_label.setText(f"Error: {str(e)}")
             self.submit_btn.setEnabled(True)
             self.submit_btn.setText("Generate")
             
+    def trigger_blender_render(self):
+        """Trigger Blender to render the 4 views needed for ComfyUI"""
+        try:
+            # First make sure the render directory exists
+            os.makedirs(BLENDER_RENDER_DIR, exist_ok=True)
+            
+            # Create a Python script to run in the current Blender instance
+            # Instead of trying to find and run a separate Blender instance,
+            # we'll create a script that can be executed by the main.py in the currently running Blender
+            
+            # First, create a simple file that flags the UI is requesting a render
+            render_request_path = os.path.join(BASE_DIR, "render_request.txt")
+            with open(render_request_path, "w") as f:
+                f.write(f"Request time: {time.time()}\n")
+                f.write(f"Target dir: {BLENDER_RENDER_DIR}\n")
+                
+            self.status_label.setText("Waiting for Blender to render views...")
+            
+            # Poll for completion by checking for a "render_complete.txt" file
+            # or checking if the expected images exist
+            render_complete = False
+            timeout = time.time() + 60  # 1 minute timeout
+            
+            # Create worker to check for render completion
+            self.check_render_timer = QTimer(self)
+            self.check_render_timer.timeout.connect(self.check_render_progress)
+            self.check_render_timer.start(1000)  # Check every second
+            
+            # Mark the render as in progress
+            self.render_in_progress = True
+            self.render_start_time = time.time()
+                
+        except Exception as e:
+            print(f"Error in trigger_blender_render: {str(e)}")
+            self.status_label.setText(f"Render error: {str(e)}")
+            # If rendering fails, continue with option generation anyway
+            self.start_options_generation()
+    
+    def check_render_progress(self):
+        """Check if the Blender render has completed"""
+        try:
+            # Check for a completion file
+            render_complete_path = os.path.join(BASE_DIR, "render_complete.txt")
+            
+            if os.path.exists(render_complete_path):
+                # Render is explicitly marked as complete
+                with open(render_complete_path, "r") as f:
+                    status = f.read().strip()
+                
+                # Delete the completion file
+                os.remove(render_complete_path)
+                
+                # Stop the timer
+                self.check_render_timer.stop()
+                
+                if "SUCCESS" in status:
+                    self.status_label.setText("Blender render completed successfully. Generating options...")
+                    self.handle_render_completion(True, "Render completed")
+                else:
+                    self.status_label.setText(f"Blender render issue: {status}. Generating options anyway...")
+                    self.handle_render_completion(False, status)
+                
+                return
+                
+            # Check if the expected images exist and are recent
+            expected_images = [
+                os.path.join(BLENDER_RENDER_DIR, "0.png"),
+                os.path.join(BLENDER_RENDER_DIR, "front.png"),
+                os.path.join(BLENDER_RENDER_DIR, "right.png"),
+                os.path.join(BLENDER_RENDER_DIR, "back.png"),
+                os.path.join(BLENDER_RENDER_DIR, "left.png")
+            ]
+            
+            # Count how many images exist and were modified after our render started
+            valid_images = 0
+            for img_path in expected_images:
+                if os.path.exists(img_path):
+                    # Check if the image was modified after our render started
+                    mod_time = os.path.getmtime(img_path)
+                    if mod_time > self.render_start_time:
+                        valid_images += 1
+                        
+            # Update status
+            if valid_images > 0:
+                self.status_label.setText(f"Rendering: {valid_images}/5 views completed...")
+                        
+            # If all 5 images exist and were recently modified, consider render complete
+            if valid_images >= 5:
+                self.check_render_timer.stop()
+                self.status_label.setText("Blender render completed. Generating options...")
+                self.handle_render_completion(True, "Render completed based on image detection")
+                return
+                
+            # Check for timeout
+            if time.time() > self.render_start_time + 60:  # 1 minute timeout
+                self.check_render_timer.stop()
+                self.status_label.setText("Render timeout. Generating options anyway...")
+                self.handle_render_completion(False, "Render timeout")
+                return
+                
+        except Exception as e:
+            print(f"Error checking render progress: {str(e)}")
+            self.check_render_timer.stop()
+            self.status_label.setText(f"Error checking render: {str(e)}. Generating options...")
+            self.handle_render_completion(False, f"Error: {str(e)}")
+
+    def handle_render_completion(self, success, message):
+        """Handle the completion of the Blender render"""
+        # Clean up any temporary files
+        try:
+            render_request_path = os.path.join(BASE_DIR, "render_request.txt")
+            if os.path.exists(render_request_path):
+                os.remove(render_request_path)
+        except Exception as e:
+            print(f"Error removing temporary files: {str(e)}")
+            
+        # Start the options generation process
+        self.start_options_generation()
+        
+    def start_options_generation(self):
+        """Start the options generation process after rendering"""
+        try:
+            # Create worker thread for options API
+            self.worker = ScriptRunner(OPTIONS_API_SCRIPT)
+            self.worker.progress.connect(self.update_status)
+            self.worker.finished.connect(self.handle_completion)
+            self.worker.start()
+        except Exception as e:
+            self.status_label.setText(f"Error starting options generation: {str(e)}")
+            self.submit_btn.setEnabled(True)
+            self.submit_btn.setText("Generate")
+        
     def update_status(self, message):
         """Update status with script progress"""
         self.status_label.setText(message)
@@ -482,20 +765,124 @@ class TransparentWindow(QMainWindow):
         """Handle script completion"""
         if success:
             self.status_label.setText("Generation complete! Loading new images...")
+            # Force file system refresh and wait a moment to ensure files are fully written
+            time.sleep(1)
+            
+            # Initial image load
             self.load_images()
+            
+            # Set up a retry timer to attempt loading images again after a delay
+            # This helps with race conditions where files might not be fully written yet
+            self.retry_timer = QTimer(self)
+            self.retry_timer.setSingleShot(True)
+            self.retry_timer.timeout.connect(self.retry_load_images)
+            self.retry_timer.start(2000)  # Try again after 2 seconds
         else:
             self.status_label.setText(f"Error: {message}")
             
         self.submit_btn.setEnabled(True)
         self.submit_btn.setText("Generate")
         
+    def retry_load_images(self):
+        """Retry loading images after a delay"""
+        print("Retrying image load after delay...")
+        self.status_label.setText("Retrying image load...")
+        self.load_images()
+        
+        # Set up one more retry if needed
+        if hasattr(self, 'retry_count'):
+            self.retry_count += 1
+        else:
+            self.retry_count = 1
+            
+        # Try up to 3 times
+        if self.retry_count < 3:
+            self.retry_timer.start(2000)  # Try again after 2 more seconds
+        else:
+            self.retry_count = 0
+        
     def handle_multiview_completion(self, success, message):
         """Handle multiview script completion"""
         if success:
-            self.status_label.setText("3D model generation complete! Model imported.")
-        else:
-            self.status_label.setText(f"Error generating 3D model: {message}")
+            self.status_label.setText("3D model generated successfully. Triggering import...")
             
+            # Now that the model has been generated, trigger the Blender import
+            self.trigger_blender_import()
+        else:
+            error_msg = message.strip()
+            self.status_label.setText(f"Error generating 3D model: {error_msg}")
+            
+            # Show a more detailed error dialog
+            self.show_error_dialog(
+                "3D Model Generation Failed", 
+                "Failed to generate the 3D model.",
+                f"Error details: {error_msg}\n\n" +
+                "Possible causes:\n" +
+                "- ComfyUI is not running\n" +
+                "- The workflow file is missing or corrupted\n" +
+                "- The 3D generation nodes are not configured correctly\n" +
+                "- ComfyUI encountered an error during processing"
+            )
+    
+    def trigger_blender_import(self):
+        """Trigger Blender to import the generated mesh"""
+        try:
+            # Create a file that signals Blender to import the model
+            import_request_path = os.path.join(BASE_DIR, "import_request.txt")
+            with open(import_request_path, "w") as f:
+                f.write(f"Request time: {time.time()}\n")
+                f.write(f"Model path: {os.path.join(BASE_DIR, 'output', 'generated', 'Models', 'current_mesh.glb')}\n")
+                
+            self.status_label.setText("Waiting for Blender to import the model...")
+            
+            # Create a timer to check for import completion
+            self.check_import_timer = QTimer(self)
+            self.check_import_timer.timeout.connect(self.check_import_progress)
+            self.check_import_timer.start(1000)  # Check every second
+            
+            # Mark the import as in progress
+            self.import_in_progress = True
+            self.import_start_time = time.time()
+                
+        except Exception as e:
+            print(f"Error triggering Blender import: {str(e)}")
+            self.status_label.setText(f"Error triggering import: {str(e)}")
+    
+    def check_import_progress(self):
+        """Check if the Blender import has completed"""
+        try:
+            # Check for a completion file
+            import_complete_path = os.path.join(BASE_DIR, "import_complete.txt")
+            
+            if os.path.exists(import_complete_path):
+                # Import is explicitly marked as complete
+                with open(import_complete_path, "r") as f:
+                    status = f.read().strip()
+                
+                # Delete the completion file
+                os.remove(import_complete_path)
+                
+                # Stop the timer
+                self.check_import_timer.stop()
+                
+                if "SUCCESS" in status:
+                    self.status_label.setText("3D model imported successfully!")
+                else:
+                    self.status_label.setText(f"Import issue: {status}")
+                
+                return
+                
+            # Check for timeout
+            if time.time() > self.import_start_time + 60:  # 1 minute timeout
+                self.check_import_timer.stop()
+                self.status_label.setText("Import timeout. Please check Blender console.")
+                return
+                
+        except Exception as e:
+            print(f"Error checking import progress: {str(e)}")
+            self.check_import_timer.stop()
+            self.status_label.setText(f"Error checking import: {str(e)}")
+
     def mousePressEvent(self, event):
         """Enable window dragging"""
         if event.button() == Qt.LeftButton:
@@ -509,10 +896,23 @@ class TransparentWindow(QMainWindow):
             event.accept()
             
     def resizeEvent(self, event):
-        """Reposition close button when window is resized"""
-        close_buttons = [child for child in self.children() if isinstance(child, MinimalButton) and child.text() == "×"]
+        """Reposition buttons when window is resized"""
+        # Find and reposition close button
+        close_buttons = [child for child in self.children() 
+                         if isinstance(child, MinimalButton) and child.text() == "×" 
+                         and child.width() == 30]  # Match the close button by size
+        
+        # Find and reposition terminate button
+        terminate_buttons = [child for child in self.children() 
+                            if isinstance(child, MinimalButton) and child.text() == "×" 
+                            and child.width() == 26]  # Match the terminate button by size
+        
         if close_buttons:
             close_buttons[0].move(self.width() - 40, 10)
+            
+        if terminate_buttons:
+            terminate_buttons[0].move(15, 15)
+            
         super().resizeEvent(event)
         
     def keyPressEvent(self, event):
@@ -521,6 +921,161 @@ class TransparentWindow(QMainWindow):
         if event.key() == Qt.Key_Escape:
             self.close()
         super().keyPressEvent(event)
+
+    def terminate_script(self):
+        """Terminate both UI and main processes"""
+        try:
+            # Show confirmation dialog
+            reply = self.show_confirmation_dialog(
+                "Terminate Script", 
+                "Are you sure you want to terminate all processes?",
+                "This will close both the UI and any running background processes."
+            )
+            
+            if reply:
+                self.status_label.setText("Terminating all processes...")
+                
+                # Try to kill any running worker processes
+                try:
+                    if hasattr(self, 'worker') and self.worker.isRunning():
+                        self.worker.terminate()
+                        self.worker.wait()
+                        
+                    if hasattr(self, 'multiview_worker') and self.multiview_worker.isRunning():
+                        self.multiview_worker.terminate()
+                        self.multiview_worker.wait()
+                except Exception as e:
+                    print(f"Error terminating worker threads: {str(e)}")
+                
+                # Exit the application with code 0
+                QApplication.quit()
+                
+                # For cases where QApplication.quit() doesn't work
+                import os
+                os._exit(0)
+        except Exception as e:
+            self.status_label.setText(f"Error terminating: {str(e)}")
+    
+    def show_confirmation_dialog(self, title, message, detail=""):
+        """Show a confirmation dialog and return True if confirmed"""
+        msg_box = QMessageBox()
+        msg_box.setWindowTitle(title)
+        msg_box.setText(message)
+        if detail:
+            msg_box.setInformativeText(detail)
+        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msg_box.setDefaultButton(QMessageBox.No)
+        
+        # Style the message box
+        msg_box.setStyleSheet("""
+            QMessageBox {
+                background-color: #333333;
+                color: #ffffff;
+            }
+            QLabel {
+                color: #ffffff;
+            }
+            QPushButton {
+                background-color: #555555;
+                color: #ffffff;
+                border: 1px solid #777777;
+                padding: 5px 15px;
+                border-radius: 3px;
+            }
+            QPushButton:hover {
+                background-color: #666666;
+            }
+        """)
+        
+        # Return True if user clicked Yes
+        return msg_box.exec_() == QMessageBox.Yes
+
+    def show_error_dialog(self, title, message, detail=""):
+        """Show an error dialog with details"""
+        from PyQt5.QtWidgets import QMessageBox
+        
+        msg_box = QMessageBox()
+        msg_box.setWindowTitle(title)
+        msg_box.setIcon(QMessageBox.Critical)
+        msg_box.setText(message)
+        if detail:
+            msg_box.setInformativeText(detail)
+        
+        # Style the message box
+        msg_box.setStyleSheet("""
+            QMessageBox {
+                background-color: #333333;
+                color: #ffffff;
+            }
+            QLabel {
+                color: #ffffff;
+            }
+            QPushButton {
+                background-color: #555555;
+                color: #ffffff;
+                border: 1px solid #777777;
+                padding: 5px 15px;
+                border-radius: 3px;
+            }
+            QPushButton:hover {
+                background-color: #666666;
+            }
+        """)
+        
+        msg_box.exec_()
+
+def find_blender_executable():
+    """Find the Blender executable path"""
+    # First try the PATH environment variable
+    try:
+        # Check if blender is in the PATH
+        process = subprocess.run(["blender", "--version"], 
+                                capture_output=True, text=True, check=False)
+        if process.returncode == 0:
+            return "blender"  # Blender is in PATH
+    except:
+        pass
+    
+    # Then try common installation directories
+    for path in BLENDER_INSTALL_PATHS:
+        if os.path.exists(path):
+            return path
+    
+    # Finally try to find Blender in Program Files
+    program_files = os.environ.get("ProgramFiles", r"C:\Program Files")
+    for root, dirs, files in os.walk(program_files):
+        if "blender.exe" in files:
+            return os.path.join(root, "blender.exe")
+            
+    # Not found
+    return None
+
+def check_comfyui_running():
+    """Check if ComfyUI server is running"""
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(2)
+        # ComfyUI default port is 8188
+        result = sock.connect_ex(('127.0.0.1', 8188))
+        sock.close()
+        return result == 0  # Return True if port is open
+    except Exception as e:
+        print(f"Error checking ComfyUI: {str(e)}")
+        return False
+
+def verify_comfyui_workflows():
+    """Verify that the ComfyUI workflow files exist"""
+    workflow_files = {
+        "Options": os.path.join(BASE_DIR, "src", "comfyworkflows", "VIBEOptions.json"),
+        "MultiView": os.path.join(BASE_DIR, "src", "comfyworkflows", "VIBEMultiView.json")
+    }
+    
+    missing = []
+    for name, path in workflow_files.items():
+        if not os.path.exists(path):
+            missing.append(f"{name} workflow ({path})")
+    
+    return missing
 
 # Run the application
 if __name__ == "__main__":

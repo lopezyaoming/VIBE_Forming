@@ -40,6 +40,12 @@ PROMPT_FILE = "prompt.txt"
 INPUT_TEXT_FILE = r"C:\CODING\VIBE\VIBE_Forming\input\input.txt"
 OPTIONS_API_SCRIPT = r"C:\CODING\VIBE\VIBE_Forming\src\comfyworkflows\options_API.py"
 
+# Communication files for integration with UI
+RENDER_REQUEST_FILE = r"C:\CODING\VIBE\VIBE_Forming\render_request.txt"
+RENDER_COMPLETE_FILE = r"C:\CODING\VIBE\VIBE_Forming\render_complete.txt"
+IMPORT_REQUEST_FILE = r"C:\CODING\VIBE\VIBE_Forming\import_request.txt"
+IMPORT_COMPLETE_FILE = r"C:\CODING\VIBE\VIBE_Forming\import_complete.txt"
+
 # Custom request property group
 class CustomRequestProperties(PropertyGroup):
     custom_prompt: StringProperty(
@@ -442,14 +448,43 @@ def import_generated_mesh():
         objects_before = set(bpy.context.scene.objects)
         
         # Import the GLB file with specific import options
-        # Note: Check which parameters are actually supported in this version of Blender
         try:
-            # Try with minimal options first
-            bpy.ops.import_scene.gltf(filepath=GENERATED_MESH_PATH)
-            logging.info("Successfully imported glTF with basic options")
+            logging.info(f"Attempting to import {GENERATED_MESH_PATH}")
+            
+            # Make sure the file exists and has size
+            file_size = os.path.getsize(GENERATED_MESH_PATH)
+            logging.info(f"GLB file size: {file_size} bytes")
+            
+            if file_size == 0:
+                logging.error("GLB file exists but is empty (0 bytes)")
+                return False
+                
+            # Import with more detailed options and error catching
+            try:
+                # First try to use import options that exclude empty objects
+                bpy.ops.import_scene.gltf(
+                    filepath=GENERATED_MESH_PATH,
+                    import_pack_images=True,
+                    merge_vertices=True,
+                    import_cameras=False,
+                    import_lights=False
+                )
+                logging.info("Successfully imported glTF with advanced options")
+            except TypeError:
+                # Fall back to basic import if the version doesn't support those options
+                bpy.ops.import_scene.gltf(filepath=GENERATED_MESH_PATH)
+                logging.info("Successfully imported glTF with basic options")
+                
         except Exception as import_error:
-            logging.error(f"Error during import with basic options: {import_error}")
-            return False
+            logging.error(f"Error during import: {import_error}")
+            # Try with pure filepath
+            try:
+                logging.info("Trying alternative import method...")
+                bpy.ops.import_scene.gltf(filepath=str(GENERATED_MESH_PATH))
+                logging.info("Alternative import method succeeded")
+            except Exception as alt_error:
+                logging.error(f"Alternative import also failed: {alt_error}")
+                return False
         
         # Get the list of objects after import
         objects_after = set(bpy.context.scene.objects)
@@ -461,31 +496,51 @@ def import_generated_mesh():
         if not imported_objects:
             logging.error("No objects were imported")
             return False
-            
-        # Get the imported mesh objects
-        imported_meshes = [obj for obj in imported_objects if obj.type == 'MESH']
         
-        if not imported_meshes:
-            logging.error("No mesh objects were imported")
-            return False
-            
-        # Get the main imported mesh (the one with actual geometry)
-        main_mesh = None
-        for obj in imported_meshes:
-            if obj.type == 'MESH' and len(obj.data.vertices) > 0:
-                main_mesh = obj
-                break
-                
-        if not main_mesh:
-            logging.error("No valid mesh with geometry was found in the import")
-            return False
-            
-        # Delete any empty objects or non-mesh objects that might have been imported
+        # Find all imported mesh objects, regardless of hierarchy
+        all_imported_meshes = []
+        empties_to_remove = []
+        
+        # Identify meshes and empty container objects
         for obj in imported_objects:
-            if obj != main_mesh:
-                bpy.data.objects.remove(obj, do_unlink=True)
+            if obj.type == 'MESH' and hasattr(obj.data, 'vertices') and len(obj.data.vertices) > 0:
+                all_imported_meshes.append(obj)
+                logging.info(f"Found mesh: {obj.name} with {len(obj.data.vertices)} vertices")
+            elif obj.type == 'EMPTY' and (obj.name.lower() == 'world' or obj.name.lower() == 'scene' or obj.name.lower().startswith('empty')):
+                # This is likely a container object we want to remove
+                empties_to_remove.append(obj)
+                logging.info(f"Found empty container: {obj.name}")
+                
+                # Check for mesh children and add them to our list
+                for child in obj.children:
+                    if child.type == 'MESH' and child not in all_imported_meshes:
+                        all_imported_meshes.append(child)
+                        logging.info(f"Found mesh child: {child.name} with {len(child.data.vertices) if hasattr(child.data, 'vertices') else 0} vertices")
+            
+        if not all_imported_meshes:
+            logging.error("No valid mesh objects found in the import")
+            return False
+            
+        # Find the mesh with the most vertices
+        main_mesh = max(all_imported_meshes, key=lambda obj: len(obj.data.vertices) if hasattr(obj.data, 'vertices') else 0)
+        logging.info(f"Selected main mesh: {main_mesh.name} with {len(main_mesh.data.vertices)} vertices")
         
-        logging.info(f"Keeping main mesh: {main_mesh.name}, removed other imported objects")
+        # Parent all mesh objects to main_mesh if they're not already in a hierarchy
+        for mesh_obj in all_imported_meshes:
+            if mesh_obj != main_mesh and mesh_obj.parent in empties_to_remove:
+                # Clear parent but keep transform
+                original_matrix = mesh_obj.matrix_world.copy()
+                mesh_obj.parent = None
+                mesh_obj.matrix_world = original_matrix
+                
+                # Make it a child of main_mesh
+                mesh_obj.parent = main_mesh
+                logging.info(f"Re-parented {mesh_obj.name} to {main_mesh.name}")
+        
+        # Now delete all empty container objects
+        for empty in empties_to_remove:
+            bpy.data.objects.remove(empty, do_unlink=True)
+            logging.info(f"Removed empty container: {empty.name}")
         
         # Hide the previous object
         previous_obj.hide_viewport = True
@@ -497,7 +552,7 @@ def import_generated_mesh():
         main_mesh.select_set(True)
         
         # Set the object's origin to its geometry center
-        bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
+        bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='BOUNDS')
         
         # Center the object at the world origin
         main_mesh.location = (0, 0, 0)
@@ -508,18 +563,23 @@ def import_generated_mesh():
         
         if current_max_dim > 0:
             scale_factor = previous_max_dim / current_max_dim
+            logging.info(f"Calculated scale factor: {scale_factor}")
+            
+            # Apply scaling to main mesh and its children
             main_mesh.scale = (scale_factor, scale_factor, scale_factor)
-            logging.info(f"Scaled imported mesh by factor {scale_factor} to match previous object dimension")
             
             # Apply the scale
             bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+            logging.info(f"Applied scaling factor {scale_factor} to match previous object dimension")
         else:
             logging.warning("Imported mesh has zero dimensions, couldn't scale properly")
         
-        logging.info(f"Imported and processed mesh: {main_mesh.name}")
+        logging.info(f"Successfully imported and processed mesh: {main_mesh.name}")
         return True
     except Exception as e:
-        logging.error(f"Error importing generated mesh: {e}")
+        logging.error(f"Error importing generated mesh: {str(e)}")
+        import traceback
+        logging.error(traceback.format_exc())
         return False
 
 def render_multiview():
@@ -561,6 +621,11 @@ def render_multiview():
         
         # Set render camera as active camera
         bpy.context.scene.camera = render_cam
+        
+        # Configure render settings
+        bpy.context.scene.render.image_settings.file_format = 'PNG'
+        bpy.context.scene.render.resolution_x = 512
+        bpy.context.scene.render.resolution_y = 512
         
         # Render each frame
         for frame, filename in RENDER_FRAMES.items():
@@ -969,6 +1034,110 @@ class REQUEST_OT_submit(bpy.types.Operator):
             self.report({'ERROR'}, f"Failed to generate options: {str(e)}")
             return {'CANCELLED'}
 
+# Check for render requests from UI
+def check_render_requests():
+    """Check if there's a render request from the UI and process it"""
+    if os.path.exists(RENDER_REQUEST_FILE):
+        logging.info(f"Found render request file: {RENDER_REQUEST_FILE}")
+        try:
+            # Read request details
+            with open(RENDER_REQUEST_FILE, 'r') as f:
+                request_details = f.read()
+                
+            logging.info(f"Request details: {request_details}")
+            
+            # Delete the request file
+            os.remove(RENDER_REQUEST_FILE)
+            
+            # Process the render
+            success = render_multiview()
+            
+            # Write completion status
+            with open(RENDER_COMPLETE_FILE, 'w') as f:
+                if success:
+                    f.write("SUCCESS")
+                    logging.info("Render completed successfully")
+                else:
+                    f.write("ERROR: Render failed")
+                    logging.info("Render failed")
+                    
+            return True
+        except Exception as e:
+            logging.error(f"Error processing render request: {e}")
+            
+            # Write error status
+            try:
+                with open(RENDER_COMPLETE_FILE, 'w') as f:
+                    f.write(f"ERROR: {str(e)}")
+            except:
+                pass
+                
+            return False
+    
+    return False
+
+# Check for import requests from UI
+def check_import_requests():
+    """Check if there's an import request from the UI and process it"""
+    if os.path.exists(IMPORT_REQUEST_FILE):
+        logging.info(f"Found import request file: {IMPORT_REQUEST_FILE}")
+        try:
+            # Read request details
+            with open(IMPORT_REQUEST_FILE, 'r') as f:
+                request_details = f.read()
+                
+            logging.info(f"Import request details: {request_details}")
+            
+            # Delete the request file
+            os.remove(IMPORT_REQUEST_FILE)
+            
+            # Process the import
+            success = import_generated_mesh()
+            
+            # Write completion status
+            with open(IMPORT_COMPLETE_FILE, 'w') as f:
+                if success:
+                    f.write("SUCCESS")
+                    logging.info("Import completed successfully")
+                else:
+                    f.write("ERROR: Import failed")
+                    logging.info("Import failed")
+                    
+            return True
+        except Exception as e:
+            logging.error(f"Error processing import request: {e}")
+            import traceback
+            logging.error(traceback.format_exc())
+            
+            # Write error status
+            try:
+                with open(IMPORT_COMPLETE_FILE, 'w') as f:
+                    f.write(f"ERROR: {str(e)}")
+            except:
+                pass
+                
+            return False
+    
+    return False
+
+# Timer function to check for render and import requests
+def check_requests_timer():
+    """Timer function to periodically check for requests"""
+    try:
+        render_processed = check_render_requests()
+        import_processed = check_import_requests()
+        
+        if render_processed:
+            logging.info("Processed render request")
+        if import_processed:
+            logging.info("Processed import request")
+            
+        # Return the time interval for the next check (in seconds)
+        return 2.0  # Check every 2 seconds
+    except Exception as e:
+        logging.error(f"Error in request timer: {e}")
+        return 5.0  # Try again after 5 seconds if there was an error
+
 # Registration function
 def register():
     ensure_directories()
@@ -1003,6 +1172,9 @@ def register():
         copy_text_file("A_0001.txt", PROMPT_FILE)
         logging.info("Applied default prompt A")
         
+    # Start timer to check for render requests
+    bpy.app.timers.register(check_requests_timer, first_interval=1.0)
+        
     logging.info("Successfully registered VIBE panel")
 
 # Unregistration function
@@ -1033,4 +1205,7 @@ if __name__ == "__main__":
         unregister()
     except:
         pass
-    register() 
+    register()
+    
+    # Check for render requests from UI
+    check_render_requests() 

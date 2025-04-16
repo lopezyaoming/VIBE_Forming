@@ -10,6 +10,8 @@ import sys
 import time
 import shutil
 import random
+import socket
+import traceback
 
 # Server configuration
 server_address = "127.0.0.1:8188"
@@ -19,11 +21,32 @@ client_id = str(uuid.uuid4())
 COMFYUI_OUTPUT = "C:\\ComfyUI_windows_portable_nvidia\\ComfyUI_windows_portable\\ComfyUI\\output"
 TARGET_OUTPUT = "C:\\CODING\\VIBE\\VIBE_Forming\\output\\generated\\Models"
 
+def check_comfyui_server():
+    """Check if the ComfyUI server is running"""
+    try:
+        host, port = server_address.split(':')
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(2)
+        result = sock.connect_ex((host, int(port)))
+        sock.close()
+        if result == 0:
+            print(f"ComfyUI server is running at {server_address}")
+            return True
+        else:
+            print(f"ERROR: ComfyUI server is not running at {server_address}")
+            return False
+    except Exception as e:
+        print(f"Error checking ComfyUI server: {str(e)}")
+        return False
+
 def queue_prompt(prompt):
     """Send a prompt to the ComfyUI server"""
     try:
         # Modify the workflow to prevent caching
-        prompt["45"]["inputs"]["seed"] = random.randint(0, 999999999)  # Random seed for KSampler
+        if "45" in prompt and "inputs" in prompt["45"]:
+            prompt["45"]["inputs"]["seed"] = random.randint(0, 999999999)  # Random seed for KSampler
+        else:
+            print("Warning: Node 45 not found for setting random seed")
         
         # Ensure consistent filename for export nodes without timestamps
         if "76" in prompt and "inputs" in prompt["76"]:  # Hy3DExportMesh node
@@ -34,6 +57,8 @@ def queue_prompt(prompt):
             if "overwrite_mode" in prompt["76"]["inputs"]:
                 prompt["76"]["inputs"]["overwrite_mode"] = "true"
                 print("Enabled overwrite mode for 3D model export node")
+        else:
+            print("Warning: Node 76 (3D export node) not found in workflow")
         
         # Check other save nodes and set overwrite mode
         save_nodes = ['33', '63', '82', '64', '83', '93', '76']
@@ -50,12 +75,29 @@ def queue_prompt(prompt):
         
         p = {"prompt": prompt, "client_id": client_id}
         data = json.dumps(p).encode('utf-8')
+        
+        # Print request size for debugging
+        print(f"Sending prompt request (size: {len(data)} bytes)")
+        
         req = urllib.request.Request(f"http://{server_address}/prompt", data=data)
         req.add_header('Content-Type', 'application/json')
-        response = urllib.request.urlopen(req)
-        return json.loads(response.read())
+        
+        try:
+            response = urllib.request.urlopen(req, timeout=10)
+            result = json.loads(response.read())
+            print(f"Prompt queued successfully: {result}")
+            return result
+        except urllib.error.URLError as url_error:
+            print(f"URLError: {str(url_error)}")
+            print("Please ensure ComfyUI is running and accessible.")
+            sys.exit(1)
+        except Exception as request_error:
+            print(f"Error during HTTP request: {str(request_error)}")
+            sys.exit(1)
+            
     except Exception as e:
-        print(f"Error queueing prompt: {str(e)}")
+        print(f"Error preparing prompt: {str(e)}")
+        traceback.print_exc()
         sys.exit(1)
 
 def get_history(prompt_id):
@@ -94,6 +136,11 @@ def copy_mesh_to_target(comfyui_output_dir, target_dir):
         return False
 
 def main():
+    # Check if ComfyUI is running
+    if not check_comfyui_server():
+        print("ERROR: ComfyUI server is not running. Please start ComfyUI first.")
+        sys.exit(1)
+        
     # Check if output directory exists
     if not os.path.exists(TARGET_OUTPUT):
         print(f"Creating output directory: {TARGET_OUTPUT}")
@@ -118,16 +165,41 @@ def main():
     
     # Load the workflow JSON file
     try:
+        if not os.path.exists(json_path):
+            print(f"ERROR: Workflow JSON file not found at: {json_path}")
+            sys.exit(1)
+            
         with open(json_path, "r", encoding="utf-8") as f:
             workflow = json.load(f)
         print("Successfully loaded workflow JSON")
+        
+        # Print key nodes for debugging
+        print(f"Workflow has {len(workflow)} nodes")
+        important_nodes = ['76', '84']  # 3D mesh export related nodes
+        for node in important_nodes:
+            if node in workflow:
+                print(f"Found node {node}: {workflow[node]['class_type']}")
+            else:
+                print(f"WARNING: Node {node} not found in workflow")
+                
+    except json.JSONDecodeError as json_error:
+        print(f"JSON decode error: {json_error}")
+        print("The workflow file exists but contains invalid JSON")
+        sys.exit(1)
     except Exception as e:
         print(f"Error loading JSON file: {e}")
-        return
+        traceback.print_exc()
+        sys.exit(1)
     
     # Create websocket connection
-    ws = websocket.WebSocket()
-    ws.connect(f"ws://{server_address}/ws?clientId={client_id}")
+    try:
+        ws = websocket.WebSocket()
+        ws.connect(f"ws://{server_address}/ws?clientId={client_id}")
+        print("Successfully connected to ComfyUI websocket")
+    except Exception as ws_error:
+        print(f"Error connecting to websocket: {str(ws_error)}")
+        print("Please ensure ComfyUI is running and websocket server is enabled")
+        sys.exit(1)
     
     try:
         # Queue the prompt
@@ -136,42 +208,103 @@ def main():
         print(f"Prompt queued with ID: {prompt_id}")
         
         # Wait for execution to complete
-        execution_timeout = time.time() + 300  # 5 minutes timeout
+        execution_timeout = time.time() + 600  # 10 minutes timeout (increased from 5)
+        execution_started = False
+        
         while time.time() < execution_timeout:
-            out = ws.recv()
-            if isinstance(out, str):
-                message = json.loads(out)
-                if message['type'] == 'executing':
-                    data = message['data']
-                    if data['node'] is None and data['prompt_id'] == prompt_id:
-                        print("Execution completed!")
+            try:
+                out = ws.recv()
+                if isinstance(out, str):
+                    message = json.loads(out)
+                    if message['type'] == 'executing':
+                        execution_started = True
+                        data = message['data']
+                        if data['node'] is None and data['prompt_id'] == prompt_id:
+                            print("Execution completed!")
+                            break
+                        elif data['node'] is not None:
+                            print(f"Executing node: {data['node']}")
+                    elif message['type'] == 'execution_error':
+                        print(f"Execution error: {message['data']}")
+                        print("This is usually caused by a configuration issue in the workflow")
                         break
-                    elif data['node'] is not None:
-                        print(f"Executing node: {data['node']}")
-                elif message['type'] == 'execution_error':
-                    print(f"Execution error: {message['data']}")
-                    break
-                elif message['type'] == 'progress':
-                    print(f"Progress: {message['data']['value']}/{message['data']['max']}")
-            else:
-                continue  # Skip binary data (previews)
+                    elif message['type'] == 'progress':
+                        execution_started = True
+                        print(f"Progress: {message['data']['value']}/{message['data']['max']}")
+                else:
+                    # Binary data (preview image)
+                    continue
+            except websocket.WebSocketTimeoutException:
+                print("Websocket timeout - retrying...")
+                continue
+            except Exception as recv_error:
+                print(f"Error receiving websocket message: {str(recv_error)}")
+                break
+                
+        if not execution_started:
+            print("Execution never started. ComfyUI might be busy or unresponsive.")
+            sys.exit(1)
         
         # Get the execution history
-        history = get_history(prompt_id)[prompt_id]
-        print("Execution history:", json.dumps(history, indent=2))
-        
-        # Check for 3D mesh output and copy it to target location
-        if '84' in history['outputs'] and 'model_file' in history['outputs']['84']:
-            print("Mesh generation completed, copying to target location...")
-            if copy_mesh_to_target(COMFYUI_OUTPUT, TARGET_OUTPUT):
-                print("Mesh successfully copied to target location")
+        try:
+            history = get_history(prompt_id)
+            if prompt_id not in history:
+                print(f"Error: Prompt ID {prompt_id} not found in execution history")
+                sys.exit(1)
+                
+            history_data = history[prompt_id]
+            print(f"Execution status: {history_data.get('status', 'unknown')}")
+            
+            # Check for outputs
+            if 'outputs' not in history_data or not history_data['outputs']:
+                print("Error: No outputs found in execution history")
+                sys.exit(1)
+                
+            outputs = history_data['outputs']
+            print(f"Found {len(outputs)} output nodes")
+            
+            # Check for 3D mesh output and copy it to target location
+            if '84' in outputs and 'model_file' in outputs['84']:
+                model_file = outputs['84']['model_file']
+                print(f"Mesh generation completed, file: {model_file}")
+                
+                if copy_mesh_to_target(COMFYUI_OUTPUT, TARGET_OUTPUT):
+                    print("Mesh successfully copied to target location")
+                else:
+                    print("Failed to copy mesh to target location")
+                    sys.exit(1)
             else:
-                print("Failed to copy mesh to target location")
-        else:
-            print("No mesh was generated in this execution")
-        
+                print("No mesh was generated in this execution")
+                print("Available output nodes:", list(outputs.keys()))
+                
+                # Check if any GLB file was generated despite missing node 84
+                if copy_mesh_to_target(COMFYUI_OUTPUT, TARGET_OUTPUT):
+                    print("Found and copied a mesh file anyway")
+                else:
+                    print("No mesh files found")
+                    sys.exit(1)
+                    
+        except Exception as history_error:
+            print(f"Error processing execution history: {str(history_error)}")
+            traceback.print_exc()
+            sys.exit(1)
+            
+    except Exception as e:
+        print(f"Error during execution: {str(e)}")
+        traceback.print_exc()
+        sys.exit(1)
     finally:
-        ws.close()
+        try:
+            ws.close()
+        except:
+            pass
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+        print("Script completed successfully")
+        sys.exit(0)
+    except Exception as e:
+        print(f"ERROR: Unhandled exception: {str(e)}")
+        traceback.print_exc()
+        sys.exit(1)

@@ -1,0 +1,1087 @@
+{
+  "1": {
+    "inputs": {
+      "name": "My rules",
+      "rules": "Your task is to convert either small phrases or prompts or audio transcripts, often incomplete, fragmented, or contradictory, into precise, vivid, innovative, and imaginative SDXL prompts.\n\ndon't consrtuct phrases\n\nalways keep it above 90 words, below 100 words. be very precise with words.\n\nToo many competing adjectives or styles can confuse the model. Pick a coherent visual universe\n\nThe goal is always to generate prompts for unique and interesting sculptures or models.\n\nBe highly descriptive, using concrete, literal, and richly detailed language.\n\nAlways emphazise on generating a monocromatic, desaturated images with minimal texture change.\n\nExclusively respond in SDXL prompts without titles, headers, conversational commentary, or formatting. \n\nYou take information from a visualizer tool and use it as a base to further specify your design.\n\nAlways make your objects floating on a black background. \n\nnever refer to theorical terms, only do sdxl prompts that literally \n\ndescribe with high amounts of detail the form and materiality of the object. \n\ndont format only give plain text. \n\nuse common model-making materials as the only materials always.\n\nwhen possible, have a maximalist superflat approach to design. be not afraid of kitch, pop culture references, plushes, pokemons, superflat pop surrealism.\n\nSDXL thrives on cultural and visual references. always pick one or two artists, architects or designers that might fit the narrative and explicitly reference them."
+    },
+    "class_type": "Griptape Create: Rules",
+    "_meta": {
+      "title": "Griptape Create: Rules"
+    }
+  },
+  "2": {
+    "inputs": {
+      "INPUT": [
+        "12",
+        0
+      ],
+      "STRING": "fat pokemon takashi murakami"
+    },
+    "class_type": "Griptape Display: Text",
+    "_meta": {
+      "title": "Griptape Display: Text"
+    }
+  },
+  "3": {
+    "inputs": {
+      "input_string": [
+        "2",
+        0
+      ],
+      "STRING": "",
+      "max_subtasks": 1,
+      "rulesets": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "Griptape Create: Agent",
+    "_meta": {
+      "title": "Griptape Create: Agent"
+    }
+  },
+  "5": {
+    "inputs": {
+      "INPUT": [
+        "3",
+        0
+      ],
+      "STRING": "A floating sculpture of a rotund, whimsical creature inspired by Pokémon, designed in the style of Takashi Murakami. The creature's form is exaggeratedly plump, with a smooth, bulbous body crafted from glossy, vibrant plastic. Its surface is adorned with Murakami's signature superflat flowers, each petal meticulously detailed in monochromatic shades. The creature's eyes are oversized and cartoonish, reflecting a playful innocence. Its limbs are short and stubby, adding to its endearing appearance. The entire sculpture hovers against a stark black background, creating a striking contrast that highlights its vivid colors and playful design."
+    },
+    "class_type": "Griptape Display: Text",
+    "_meta": {
+      "title": "Griptape Display: Text"
+    }
+  },
+  "7": {
+    "inputs": {
+      "name": "My rules",
+      "rules": "Your task is to convert either small phrases or prompts or audio transcripts, often incomplete, fragmented, or contradictory, into precise, vivid, innovative, and imaginative SDXL prompts.\n\ndon't construct phrases\n\nalways keep it above 90 words, below 100 words. be very precise with words.\n\nToo many competing adjectives or styles can confuse the model. Pick a coherent visual universe\n\nSDXL thrives on cultural and visual references. pick one or two artists, architects or designers that might fit the narrative and explicitly reference them.\n\nThe goal is always to generate prompts for unique and interesting sculptures or models.\n\nBe highly descriptive, using concrete, literal, and richly detailed language.\n\nAlways emphazise on generating a monocromatic, desaturated images with minimal texture change.\n\nExclusively respond in SDXL prompts without titles, headers, conversational commentary, or formatting. \n\nYou take information from a visualizer tool and use it as a base to further specify your design.\n\nAlways make your objects floating on a black background. \n\nnever refer to theorical terms, only do sdxl prompts that literally \n\ndescribe with high amounts of detail the form and materiality of the object. \n\ndont format only give plain text. \n\nwhen possible, try to inject ideas of jagged, deconstructed, highly detailed, biomorphic, forms with interest in seams and the fitting together of elements. avoid flowy, seamless pristine surfaces. focus on agressive, muscular approach to design like thom mayne or eric owen moss.\n\nuse fractured volumes and intersecting masses, expose mechanical systems, blend program into structure, reject symmetry, embed performance-driven surfaces, emphasize sectionality and threshold complexity, simulate structural strain\n\nSDXL thrives on cultural and visual references. always pick one or two artists, architects or designers that might fit the narrative and explicitly reference them.\n\nuse common model-making materials as the only materials always."
+    },
+    "class_type": "Griptape Create: Rules",
+    "_meta": {
+      "title": "Griptape Create: Rules"
+    }
+  },
+  "8": {
+    "inputs": {
+      "INPUT": [
+        "12",
+        0
+      ],
+      "STRING": "fat pokemon takashi murakami"
+    },
+    "class_type": "Griptape Display: Text",
+    "_meta": {
+      "title": "Griptape Display: Text"
+    }
+  },
+  "9": {
+    "inputs": {
+      "input_string": [
+        "8",
+        0
+      ],
+      "STRING": "",
+      "max_subtasks": 1,
+      "rulesets": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "Griptape Create: Agent",
+    "_meta": {
+      "title": "Griptape Create: Agent"
+    }
+  },
+  "11": {
+    "inputs": {
+      "INPUT": [
+        "9",
+        0
+      ],
+      "STRING": "A floating sculpture on a black background, inspired by Takashi Murakami's vibrant yet minimalist aesthetic, reimagining a rotund, biomorphic form reminiscent of a Pokémon. The sculpture features jagged, deconstructed surfaces with intersecting masses, exposing mechanical systems beneath. Its form is muscular and aggressive, with fractured volumes and seams that fit together in a complex, puzzle-like manner. The monochromatic, desaturated palette emphasizes the intricate details and textures, while the use of common model-making materials like foam and wire adds a tactile quality. The design rejects symmetry, blending program into structure, and simulating structural strain."
+    },
+    "class_type": "Griptape Display: Text",
+    "_meta": {
+      "title": "Griptape Display: Text"
+    }
+  },
+  "12": {
+    "inputs": {
+      "file_path": "C:\\CODING\\VIBE\\VIBE_Forming\\input\\input.txt",
+      "dictionary_name": "[filename]"
+    },
+    "class_type": "Load Text File",
+    "_meta": {
+      "title": "Load Text File"
+    }
+  },
+  "13": {
+    "inputs": {
+      "name": "My rules",
+      "rules": "Your task is to convert either small phrases or prompts or audio transcripts, often incomplete, fragmented, or contradictory, into precise, vivid, innovative, and imaginative SDXL prompts.\n\ndon't consrtuct phrases\n\nalways keep it above 90 words, below 100 words. be very precise with words.\n\nToo many competing adjectives or styles can confuse the model. Pick a coherent visual universe\n\nSDXL thrives on cultural and visual references. always pick one or two artists, architects or designers that might fit the narrative and explicitly reference them.\n\nThe goal is always to generate prompts for unique and interesting sculptures or models.\n\nBe highly descriptive, using concrete, literal, and richly detailed language.\n\nAlways emphazise on generating a monocromatic, desaturated images with minimal texture change.\n\nExclusively respond in SDXL prompts without titles, headers, conversational commentary, or formatting. \n\nYou take information from a visualizer tool and use it as a base to further specify your design.\n\nAlways make your objects floating on a black background. \n\nnever refer to theorical terms, only do sdxl prompts that literally \n\ndescribe with high amounts of detail the form and materiality of the object. \n\ndont format only give plain text. \n\nwhen possible, try to inject ideas of brutalist, highly expressive austere form with mass as a heavy form to orchestrate design. try to emphazise on purity, weight and contundency in form.\n\nuse common model-making materials as the only materials always."
+    },
+    "class_type": "Griptape Create: Rules",
+    "_meta": {
+      "title": "Griptape Create: Rules"
+    }
+  },
+  "14": {
+    "inputs": {
+      "INPUT": [
+        "12",
+        0
+      ],
+      "STRING": "fat pokemon takashi murakami"
+    },
+    "class_type": "Griptape Display: Text",
+    "_meta": {
+      "title": "Griptape Display: Text"
+    }
+  },
+  "15": {
+    "inputs": {
+      "input_string": [
+        "14",
+        0
+      ],
+      "STRING": "",
+      "max_subtasks": 1,
+      "rulesets": [
+        "13",
+        0
+      ]
+    },
+    "class_type": "Griptape Create: Agent",
+    "_meta": {
+      "title": "Griptape Create: Agent"
+    }
+  },
+  "17": {
+    "inputs": {
+      "INPUT": [
+        "15",
+        0
+      ],
+      "STRING": "A floating sculpture on a black background, inspired by the whimsical and vibrant style of Takashi Murakami. Imagine a rotund, abstract creature with exaggerated, rounded forms, reminiscent of a playful, oversized Pokémon. The sculpture is crafted from smooth, matte cardboard, its surface a monochromatic palette of soft grays, emphasizing its voluminous shape. The creature's features are minimalistic yet expressive, with large, circular eyes and a gentle, smiling mouth. Its limbs are stubby and rounded, adding to its endearing, cartoonish appearance. The overall form is both solid and buoyant, capturing a sense of joyful whimsy and imaginative play."
+    },
+    "class_type": "Griptape Display: Text",
+    "_meta": {
+      "title": "Griptape Display: Text"
+    }
+  },
+  "21": {
+    "inputs": {
+      "text": [
+        "5",
+        0
+      ],
+      "path": "C:\\CODING\\VIBE\\VIBE_Massing\\input\\COMFYINPUTS\\textOptions",
+      "filename_prefix": "A",
+      "filename_delimiter": "_",
+      "filename_number_padding": 4,
+      "file_extension": ".txt",
+      "encoding": "utf-8",
+      "filename_suffix": ""
+    },
+    "class_type": "Save Text File",
+    "_meta": {
+      "title": "Save Text File"
+    }
+  },
+  "22": {
+    "inputs": {
+      "text": [
+        "11",
+        0
+      ],
+      "path": "C:\\CODING\\VIBE\\VIBE_Massing\\input\\COMFYINPUTS\\textOptions",
+      "filename_prefix": "B",
+      "filename_delimiter": "_",
+      "filename_number_padding": 4,
+      "file_extension": ".txt",
+      "encoding": "utf-8",
+      "filename_suffix": ""
+    },
+    "class_type": "Save Text File",
+    "_meta": {
+      "title": "Save Text File"
+    }
+  },
+  "23": {
+    "inputs": {
+      "text": [
+        "17",
+        0
+      ],
+      "path": "C:\\CODING\\VIBE\\VIBE_Massing\\input\\COMFYINPUTS\\textOptions",
+      "filename_prefix": "C",
+      "filename_delimiter": "_",
+      "filename_number_padding": 4,
+      "file_extension": ".txt",
+      "encoding": "utf-8",
+      "filename_suffix": ""
+    },
+    "class_type": "Save Text File",
+    "_meta": {
+      "title": "Save Text File"
+    }
+  },
+  "24": {
+    "inputs": {
+      "pixels": [
+        "27",
+        0
+      ],
+      "vae": [
+        "30",
+        2
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE Encode"
+    }
+  },
+  "25": {
+    "inputs": {
+      "control_net_name": "control-lora-canny-rank256.safetensors"
+    },
+    "class_type": "ControlNetLoader",
+    "_meta": {
+      "title": "Load ControlNet Model"
+    }
+  },
+  "27": {
+    "inputs": {
+      "width": 512,
+      "height": 512,
+      "interpolation": "nearest",
+      "method": "fill / crop",
+      "condition": "always",
+      "multiple_of": 0,
+      "image": [
+        "38",
+        0
+      ]
+    },
+    "class_type": "ImageResize+",
+    "_meta": {
+      "title": "🔧 Image Resize"
+    }
+  },
+  "28": {
+    "inputs": {
+      "coarse": "disable",
+      "resolution": 512,
+      "image": [
+        "27",
+        0
+      ]
+    },
+    "class_type": "LineArtPreprocessor",
+    "_meta": {
+      "title": "Realistic Lineart"
+    }
+  },
+  "30": {
+    "inputs": {
+      "ckpt_name": "juggernautXL_juggXIByRundiffusion.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  },
+  "32": {
+    "inputs": {
+      "samples": [
+        "45",
+        0
+      ],
+      "vae": [
+        "30",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "33": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "32",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "36": {
+    "inputs": {
+      "lora_name": "ModelMaker-XL.safetensors",
+      "strength_model": 0.5,
+      "strength_clip": 0.5,
+      "model": [
+        "30",
+        0
+      ],
+      "clip": [
+        "30",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  },
+  "38": {
+    "inputs": {
+      "image": "front (3).png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "43": {
+    "inputs": {
+      "strength": 0.7500000000000001,
+      "start_percent": 0,
+      "end_percent": 0.909,
+      "positive": [
+        "51",
+        0
+      ],
+      "negative": [
+        "86",
+        0
+      ],
+      "control_net": [
+        "25",
+        0
+      ],
+      "image": [
+        "28",
+        0
+      ],
+      "vae": [
+        "30",
+        2
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "Apply ControlNet"
+    }
+  },
+  "45": {
+    "inputs": {
+      "seed": 971170413463736,
+      "steps": 8,
+      "cfg": 2.2,
+      "sampler_name": "lcm",
+      "scheduler": "simple",
+      "denoise": 0.8000000000000002,
+      "model": [
+        "94",
+        0
+      ],
+      "positive": [
+        "131",
+        0
+      ],
+      "negative": [
+        "131",
+        1
+      ],
+      "latent_image": [
+        "24",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "51": {
+    "inputs": {
+      "STRING": [
+        "134",
+        0
+      ],
+      "clip": [
+        "94",
+        1
+      ]
+    },
+    "class_type": "Griptape Convert: Text to CLIP Encode",
+    "_meta": {
+      "title": "Griptape Convert: Text to CLIP Encode"
+    }
+  },
+  "55": {
+    "inputs": {
+      "width": 512,
+      "height": 512,
+      "interpolation": "nearest",
+      "method": "fill / crop",
+      "condition": "always",
+      "multiple_of": 0,
+      "image": [
+        "38",
+        0
+      ]
+    },
+    "class_type": "ImageResize+",
+    "_meta": {
+      "title": "🔧 Image Resize"
+    }
+  },
+  "56": {
+    "inputs": {
+      "strength": 0.7500000000000001,
+      "start_percent": 0,
+      "end_percent": 0.909,
+      "positive": [
+        "70",
+        0
+      ],
+      "negative": [
+        "86",
+        0
+      ],
+      "control_net": [
+        "25",
+        0
+      ],
+      "image": [
+        "58",
+        0
+      ],
+      "vae": [
+        "30",
+        2
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "Apply ControlNet"
+    }
+  },
+  "58": {
+    "inputs": {
+      "coarse": "disable",
+      "resolution": 512,
+      "image": [
+        "55",
+        0
+      ]
+    },
+    "class_type": "LineArtPreprocessor",
+    "_meta": {
+      "title": "Realistic Lineart"
+    }
+  },
+  "60": {
+    "inputs": {
+      "samples": [
+        "66",
+        0
+      ],
+      "vae": [
+        "30",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "63": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "60",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "64": {
+    "inputs": {
+      "output_path": "C:\\CODING\\VIBE\\VIBE_Massing\\input\\COMFYINPUTS\\ImageOPTIONS",
+      "filename_prefix": "B",
+      "filename_delimiter": "_",
+      "filename_number_padding": 4,
+      "filename_number_start": "false",
+      "extension": "png",
+      "dpi": 300,
+      "quality": 100,
+      "optimize_image": "true",
+      "lossless_webp": "false",
+      "overwrite_mode": "false",
+      "show_history": "false",
+      "show_history_by_prefix": "true",
+      "embed_workflow": "true",
+      "show_previews": "true",
+      "images": [
+        "60",
+        0
+      ]
+    },
+    "class_type": "Image Save",
+    "_meta": {
+      "title": "Image Save"
+    }
+  },
+  "66": {
+    "inputs": {
+      "seed": 971170413463736,
+      "steps": 8,
+      "cfg": 2.2,
+      "sampler_name": "lcm",
+      "scheduler": "simple",
+      "denoise": 0.8000000000000002,
+      "model": [
+        "94",
+        0
+      ],
+      "positive": [
+        "125",
+        0
+      ],
+      "negative": [
+        "125",
+        1
+      ],
+      "latent_image": [
+        "67",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "67": {
+    "inputs": {
+      "pixels": [
+        "55",
+        0
+      ],
+      "vae": [
+        "30",
+        2
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE Encode"
+    }
+  },
+  "70": {
+    "inputs": {
+      "STRING": [
+        "135",
+        0
+      ],
+      "clip": [
+        "94",
+        1
+      ]
+    },
+    "class_type": "Griptape Convert: Text to CLIP Encode",
+    "_meta": {
+      "title": "Griptape Convert: Text to CLIP Encode"
+    }
+  },
+  "74": {
+    "inputs": {
+      "width": 512,
+      "height": 512,
+      "interpolation": "nearest",
+      "method": "fill / crop",
+      "condition": "always",
+      "multiple_of": 0,
+      "image": [
+        "38",
+        0
+      ]
+    },
+    "class_type": "ImageResize+",
+    "_meta": {
+      "title": "🔧 Image Resize"
+    }
+  },
+  "75": {
+    "inputs": {
+      "strength": 0.7500000000000001,
+      "start_percent": 0,
+      "end_percent": 0.909,
+      "positive": [
+        "89",
+        0
+      ],
+      "negative": [
+        "86",
+        0
+      ],
+      "control_net": [
+        "25",
+        0
+      ],
+      "image": [
+        "77",
+        0
+      ],
+      "vae": [
+        "30",
+        2
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "Apply ControlNet"
+    }
+  },
+  "77": {
+    "inputs": {
+      "coarse": "disable",
+      "resolution": 512,
+      "image": [
+        "74",
+        0
+      ]
+    },
+    "class_type": "LineArtPreprocessor",
+    "_meta": {
+      "title": "Realistic Lineart"
+    }
+  },
+  "79": {
+    "inputs": {
+      "samples": [
+        "84",
+        0
+      ],
+      "vae": [
+        "30",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "82": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "79",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "83": {
+    "inputs": {
+      "output_path": "C:\\CODING\\VIBE\\VIBE_Massing\\input\\COMFYINPUTS\\ImageOPTIONS",
+      "filename_prefix": "C",
+      "filename_delimiter": "_",
+      "filename_number_padding": 4,
+      "filename_number_start": "false",
+      "extension": "png",
+      "dpi": 300,
+      "quality": 100,
+      "optimize_image": "true",
+      "lossless_webp": "false",
+      "overwrite_mode": "false",
+      "show_history": "false",
+      "show_history_by_prefix": "true",
+      "embed_workflow": "true",
+      "show_previews": "true",
+      "images": [
+        "79",
+        0
+      ]
+    },
+    "class_type": "Image Save",
+    "_meta": {
+      "title": "Image Save"
+    }
+  },
+  "84": {
+    "inputs": {
+      "seed": 971170413463736,
+      "steps": 8,
+      "cfg": 2.2,
+      "sampler_name": "lcm",
+      "scheduler": "simple",
+      "denoise": 0.8000000000000002,
+      "model": [
+        "94",
+        0
+      ],
+      "positive": [
+        "132",
+        0
+      ],
+      "negative": [
+        "132",
+        1
+      ],
+      "latent_image": [
+        "85",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "85": {
+    "inputs": {
+      "pixels": [
+        "74",
+        0
+      ],
+      "vae": [
+        "30",
+        2
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE Encode"
+    }
+  },
+  "86": {
+    "inputs": {
+      "text": "text,base, podium, turntable, watermark, perspective, (low quality:1.5), distorted, out of focus, ugly, footpath, waterfall, saturated, lively, blurry, distorted, low quality, oversaturated, noisy, washed out, pixelated, cluttered, unnatural lighting, deformed, symmetrical, simplistic, hanging, thread, string, tentacles, base, saturated, feathers, angel, plants\n\n\n\n\n\n\n\n\n",
+      "clip": [
+        "94",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "89": {
+    "inputs": {
+      "STRING": [
+        "137",
+        0
+      ],
+      "clip": [
+        "94",
+        1
+      ]
+    },
+    "class_type": "Griptape Convert: Text to CLIP Encode",
+    "_meta": {
+      "title": "Griptape Convert: Text to CLIP Encode"
+    }
+  },
+  "93": {
+    "inputs": {
+      "output_path": "C:\\CODING\\VIBE\\VIBE_Massing\\input\\COMFYINPUTS\\ImageOPTIONS",
+      "filename_prefix": "A",
+      "filename_delimiter": "_",
+      "filename_number_padding": 4,
+      "filename_number_start": "false",
+      "extension": "png",
+      "dpi": 300,
+      "quality": 100,
+      "optimize_image": "true",
+      "lossless_webp": "false",
+      "overwrite_mode": "false",
+      "show_history": "false",
+      "show_history_by_prefix": "true",
+      "embed_workflow": "true",
+      "show_previews": "true",
+      "images": [
+        "32",
+        0
+      ]
+    },
+    "class_type": "Image Save",
+    "_meta": {
+      "title": "Image Save"
+    }
+  },
+  "94": {
+    "inputs": {
+      "lora_name": "pytorch_lora_weights.safetensors",
+      "strength_model": 1.0000000000000002,
+      "strength_clip": 1.0000000000000002,
+      "model": [
+        "30",
+        0
+      ],
+      "clip": [
+        "30",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  },
+  "125": {
+    "inputs": {
+      "strength": 0.7500000000000001,
+      "start_percent": 0,
+      "end_percent": 0.909,
+      "positive": [
+        "56",
+        0
+      ],
+      "negative": [
+        "56",
+        1
+      ],
+      "control_net": [
+        "128",
+        0
+      ],
+      "image": [
+        "127",
+        0
+      ],
+      "vae": [
+        "30",
+        2
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "Apply ControlNet"
+    }
+  },
+  "126": {
+    "inputs": {
+      "ckpt_name": "depth_anything_vitl14.pth",
+      "resolution": 512
+    },
+    "class_type": "DepthAnythingPreprocessor",
+    "_meta": {
+      "title": "Depth Anything"
+    }
+  },
+  "127": {
+    "inputs": {
+      "ckpt_name": "depth_anything_v2_vitl.pth",
+      "resolution": 512,
+      "image": [
+        "55",
+        0
+      ]
+    },
+    "class_type": "DepthAnythingV2Preprocessor",
+    "_meta": {
+      "title": "Depth Anything V2 - Relative"
+    }
+  },
+  "128": {
+    "inputs": {
+      "control_net_name": "control-lora-depth-rank256.safetensors"
+    },
+    "class_type": "ControlNetLoader",
+    "_meta": {
+      "title": "Load ControlNet Model"
+    }
+  },
+  "129": {
+    "inputs": {
+      "ckpt_name": "depth_anything_v2_vitl.pth",
+      "resolution": 512,
+      "image": [
+        "27",
+        0
+      ]
+    },
+    "class_type": "DepthAnythingV2Preprocessor",
+    "_meta": {
+      "title": "Depth Anything V2 - Relative"
+    }
+  },
+  "130": {
+    "inputs": {
+      "ckpt_name": "depth_anything_v2_vitl.pth",
+      "resolution": 512,
+      "image": [
+        "74",
+        0
+      ]
+    },
+    "class_type": "DepthAnythingV2Preprocessor",
+    "_meta": {
+      "title": "Depth Anything V2 - Relative"
+    }
+  },
+  "131": {
+    "inputs": {
+      "strength": 0.7500000000000001,
+      "start_percent": 0,
+      "end_percent": 0.909,
+      "positive": [
+        "43",
+        0
+      ],
+      "negative": [
+        "43",
+        1
+      ],
+      "control_net": [
+        "128",
+        0
+      ],
+      "image": [
+        "129",
+        0
+      ],
+      "vae": [
+        "30",
+        2
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "Apply ControlNet"
+    }
+  },
+  "132": {
+    "inputs": {
+      "strength": 0.7500000000000001,
+      "start_percent": 0,
+      "end_percent": 0.909,
+      "positive": [
+        "75",
+        0
+      ],
+      "negative": [
+        "75",
+        1
+      ],
+      "control_net": [
+        "128",
+        0
+      ],
+      "image": [
+        "130",
+        0
+      ],
+      "vae": [
+        "30",
+        2
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "Apply ControlNet"
+    }
+  },
+  "133": {
+    "inputs": {
+      "INPUT": [
+        "5",
+        0
+      ],
+      "STRING": "A floating sculpture of a rotund, whimsical creature inspired by Pokémon, designed in the style of Takashi Murakami. The creature's form is exaggeratedly plump, with a smooth, bulbous body crafted from glossy, vibrant plastic. Its surface is adorned with Murakami's signature superflat flowers, each petal meticulously detailed in monochromatic shades. The creature's eyes are oversized and cartoonish, reflecting a playful innocence. Its limbs are short and stubby, adding to its endearing appearance. The entire sculpture hovers against a stark black background, creating a striking contrast that highlights its vivid colors and playful design."
+    },
+    "class_type": "Griptape Display: Text",
+    "_meta": {
+      "title": "Griptape Display: Text"
+    }
+  },
+  "134": {
+    "inputs": {
+      "delimiter": ", ",
+      "clean_whitespace": "true",
+      "text_a": [
+        "133",
+        0
+      ]
+    },
+    "class_type": "Text Concatenate",
+    "_meta": {
+      "title": "Text Concatenate"
+    }
+  },
+  "135": {
+    "inputs": {
+      "delimiter": ", ",
+      "clean_whitespace": "true",
+      "text_a": [
+        "136",
+        0
+      ]
+    },
+    "class_type": "Text Concatenate",
+    "_meta": {
+      "title": "Text Concatenate"
+    }
+  },
+  "136": {
+    "inputs": {
+      "INPUT": [
+        "11",
+        0
+      ],
+      "STRING": "A floating sculpture on a black background, inspired by Takashi Murakami's vibrant yet minimalist aesthetic, reimagining a rotund, biomorphic form reminiscent of a Pokémon. The sculpture features jagged, deconstructed surfaces with intersecting masses, exposing mechanical systems beneath. Its form is muscular and aggressive, with fractured volumes and seams that fit together in a complex, puzzle-like manner. The monochromatic, desaturated palette emphasizes the intricate details and textures, while the use of common model-making materials like foam and wire adds a tactile quality. The design rejects symmetry, blending program into structure, and simulating structural strain."
+    },
+    "class_type": "Griptape Display: Text",
+    "_meta": {
+      "title": "Griptape Display: Text"
+    }
+  },
+  "137": {
+    "inputs": {
+      "delimiter": ", ",
+      "clean_whitespace": "true",
+      "text_a": [
+        "138",
+        0
+      ]
+    },
+    "class_type": "Text Concatenate",
+    "_meta": {
+      "title": "Text Concatenate"
+    }
+  },
+  "138": {
+    "inputs": {
+      "INPUT": [
+        "17",
+        0
+      ],
+      "STRING": "A floating sculpture on a black background, inspired by the whimsical and vibrant style of Takashi Murakami. Imagine a rotund, abstract creature with exaggerated, rounded forms, reminiscent of a playful, oversized Pokémon. The sculpture is crafted from smooth, matte cardboard, its surface a monochromatic palette of soft grays, emphasizing its voluminous shape. The creature's features are minimalistic yet expressive, with large, circular eyes and a gentle, smiling mouth. Its limbs are stubby and rounded, adding to its endearing, cartoonish appearance. The overall form is both solid and buoyant, capturing a sense of joyful whimsy and imaginative play."
+    },
+    "class_type": "Griptape Display: Text",
+    "_meta": {
+      "title": "Griptape Display: Text"
+    }
+  }
+}
