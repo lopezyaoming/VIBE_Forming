@@ -60,6 +60,32 @@ def queue_prompt(prompt):
         else:
             print("Warning: Node 76 (3D export node) not found in workflow")
         
+        # Force reload of the text file by updating dictionary_name parameter
+        prompt_txt_path = os.path.join("C:\\CODING\\VIBE\\VIBE_Forming\\input\\COMFYINPUTS\\textOptions", "prompt.txt")
+        
+        if "102" in prompt and "inputs" in prompt["102"]:  # Load Text File node
+            if "file_path" in prompt["102"]["inputs"] and os.path.exists(prompt_txt_path):
+                try:
+                    # Instead of creating a temp file, add a timestamp to the dictionary_name
+                    # This will force ComfyUI to consider this as a new configuration
+                    timestamp = int(time.time())
+                    
+                    # Keep the original file path but change the dictionary_name
+                    if "dictionary_name" in prompt["102"]["inputs"]:
+                        # Add timestamp to dictionary_name to force reload
+                        original_dict_name = prompt["102"]["inputs"]["dictionary_name"]
+                        prompt["102"]["inputs"]["dictionary_name"] = f"{original_dict_name}_{timestamp}"
+                        print(f"Added timestamp to dictionary_name to force reload: {prompt['102']['inputs']['dictionary_name']}")
+                    else:
+                        # If no dictionary_name exists, add one with timestamp
+                        prompt["102"]["inputs"]["dictionary_name"] = f"forced_reload_{timestamp}"
+                        print(f"Added new dictionary_name with timestamp: {prompt['102']['inputs']['dictionary_name']}")
+                        
+                except Exception as e:
+                    print(f"Error setting up text file reload: {str(e)}")
+        else:
+            print("Warning: Node 102 (Load Text File node) not found in workflow")
+        
         # Check other save nodes and set overwrite mode
         save_nodes = ['33', '63', '82', '64', '83', '93', '76']
         for node_id in save_nodes:

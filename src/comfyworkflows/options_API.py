@@ -17,8 +17,11 @@ client_id = str(uuid.uuid4())
 # Define absolute paths
 BASE_DIR = r"C:\CODING\VIBE\VIBE_Forming"
 OUTPUT_DIR = os.path.join(BASE_DIR, "input", "COMFYINPUTS", "ImageOPTIONS")
+TEXT_OPTIONS_DIR = os.path.join(BASE_DIR, "input", "COMFYINPUTS", "textOptions")
+PROMPT_FILE = os.path.join(TEXT_OPTIONS_DIR, "prompt.txt")
 
 print(f"Script starting, output directory set to: {OUTPUT_DIR}")
+print(f"Text options directory set to: {TEXT_OPTIONS_DIR}")
 
 def queue_prompt(prompt):
     """Send a prompt to the ComfyUI server"""
@@ -124,6 +127,23 @@ def save_image_from_base64(image_data, output_path):
         print(f"Error saving base64 image: {str(e)}")
         return False
 
+def save_prompt_text(option, prompt_text):
+    """Save prompt text to a simple named file (A.txt, B.txt, C.txt)"""
+    try:
+        # Ensure the text options directory exists
+        os.makedirs(TEXT_OPTIONS_DIR, exist_ok=True)
+        
+        # Save with the simpler naming format
+        file_path = os.path.join(TEXT_OPTIONS_DIR, f"{option}.txt")
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(prompt_text)
+        
+        print(f"Successfully saved prompt to {file_path}")
+        return True
+    except Exception as e:
+        print(f"Error saving prompt text: {str(e)}")
+        return False
+
 def main():
     # Check if output directory exists
     if not os.path.exists(OUTPUT_DIR):
@@ -136,6 +156,16 @@ def main():
             sys.exit(1)
     else:
         print(f"Output directory already exists: {OUTPUT_DIR}")
+    
+    # Ensure text options directory exists
+    if not os.path.exists(TEXT_OPTIONS_DIR):
+        print(f"Creating text options directory: {TEXT_OPTIONS_DIR}")
+        try:
+            os.makedirs(TEXT_OPTIONS_DIR, exist_ok=True)
+            print(f"Successfully created directory: {TEXT_OPTIONS_DIR}")
+        except Exception as e:
+            print(f"ERROR: Failed to create directory: {str(e)}")
+            sys.exit(1)
     
     # Test write permissions
     try:
@@ -180,6 +210,9 @@ def main():
         image_nodes = ['33', '63', '82']  # Only track the main save nodes
         node_to_letter = {'33': 'A', '63': 'B', '82': 'C'}  # Map nodes to letters
         
+        # Store prompt text for each node
+        prompt_texts = {}
+        
         # Poll for completion by checking history endpoint
         max_attempts = 120  # 10 minutes (5 sec interval)
         for attempt in range(max_attempts):
@@ -193,6 +226,15 @@ def main():
                 # Check if the execution is complete
                 if prompt_id in history_data and "outputs" in history_data[prompt_id]:
                     outputs = history_data[prompt_id]["outputs"]
+                    
+                    # Extract prompt texts from history if available
+                    if "64" in outputs and "text" in outputs["64"]:
+                        prompt_texts['A'] = outputs["64"]["text"]
+                    if "83" in outputs and "text" in outputs["83"]:
+                        prompt_texts['B'] = outputs["64"]["text"]
+                    if "93" in outputs and "text" in outputs["93"]:
+                        prompt_texts['C'] = outputs["64"]["text"]
+                    
                     # Check if all image nodes have completed
                     all_nodes_done = True
                     for node_id in image_nodes:
@@ -302,6 +344,37 @@ def main():
                         print(f"Error copying {letter}.png to Blender directory: {e}")
                 else:
                     print(f"Source image {source_path} does not exist")
+            
+            # Check if we have any prompt texts and save them with simpler naming
+            for letter in ['A', 'B', 'C']:
+                # Look for traditional naming format first
+                old_format_path = os.path.join(TEXT_OPTIONS_DIR, f"{letter}_0001.txt")
+                if os.path.exists(old_format_path):
+                    try:
+                        with open(old_format_path, 'r', encoding='utf-8') as f:
+                            prompt_text = f.read()
+                        
+                        # Save with the simpler naming format
+                        save_prompt_text(letter, prompt_text)
+                        
+                        # Also update prompt.txt with the content of option A by default
+                        if letter == 'A':
+                            with open(PROMPT_FILE, 'w', encoding='utf-8') as f:
+                                f.write(prompt_text)
+                            print(f"Updated {PROMPT_FILE} with content from option A")
+                            
+                    except Exception as e:
+                        print(f"Error processing prompt text for {letter}: {e}")
+                # Also check if we got the text directly from history data
+                elif letter in prompt_texts and prompt_texts[letter]:
+                    save_prompt_text(letter, prompt_texts[letter])
+                    
+                    # Also update prompt.txt with the content of option A by default
+                    if letter == 'A':
+                        with open(PROMPT_FILE, 'w', encoding='utf-8') as f:
+                            f.write(prompt_texts[letter])
+                        print(f"Updated {PROMPT_FILE} with content from option A")
+                
         else:
             print(f"\nOutput directory {OUTPUT_DIR} does not exist!")
         

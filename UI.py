@@ -540,15 +540,83 @@ class TransparentWindow(QMainWindow):
                 f.write(f"Selected Option: {option}\n")
                 f.write(f"Timestamp: {time.time()}\n")
                 
-            # Copy text prompt
-            source_file = os.path.join(TEXTOPT_DIR, f"{option}_0001.txt")
+            # Copy text prompt - try simple naming format first, then fall back to older format
+            simple_source_file = os.path.join(TEXTOPT_DIR, f"{option}.txt")
+            legacy_source_file = os.path.join(TEXTOPT_DIR, f"{option}_0001.txt")
             target_file = os.path.join(TEXTOPT_DIR, "prompt.txt")
             
-            if os.path.exists(source_file):
-                shutil.copy2(source_file, target_file)
-                self.status_label.setText(f"Selected option {option} and applied its prompt")
+            # Ensure the destination directory exists
+            try:
+                os.makedirs(os.path.dirname(target_file), exist_ok=True)
+                print(f"Ensured directory exists: {os.path.dirname(target_file)}")
+            except Exception as e:
+                self.status_label.setText(f"Error creating directory: {str(e)}")
+                print(f"Error creating directory for prompt.txt: {str(e)}")
+                return
+            
+            # Function to force file system to recognize new content
+            def force_file_update(file_path, content):
+                try:
+                    # First delete the file if it exists (forces file change notification)
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                        print(f"Deleted existing file: {file_path}")
+                    
+                    # Write the content to a new file
+                    with open(file_path, 'w', encoding='utf-8') as f:
+                        f.write(content)
+                    
+                    # Get file size for confirmation
+                    if os.path.exists(file_path):
+                        file_size = os.path.getsize(file_path)
+                        print(f"Created new file: {file_path} (size: {file_size} bytes)")
+                        return True, file_size
+                    else:
+                        print(f"Failed to create file: {file_path}")
+                        return False, 0
+                except Exception as e:
+                    print(f"Error updating file {file_path}: {str(e)}")
+                    return False, 0
+                
+            if os.path.exists(simple_source_file):
+                # Use the simple naming format file
+                try:
+                    # Read content from source
+                    with open(simple_source_file, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    
+                    # Force update the target file
+                    success, file_size = force_file_update(target_file, content)
+                    
+                    if success:
+                        self.status_label.setText(f"Selected option {option} and applied its prompt")
+                        print(f"Applied prompt from {simple_source_file} to {target_file} (size: {file_size} bytes)")
+                    else:
+                        self.status_label.setText(f"Error applying prompt from option {option}")
+                except Exception as e:
+                    self.status_label.setText(f"Error copying prompt: {str(e)}")
+                    print(f"Error processing from {simple_source_file} to {target_file}: {str(e)}")
+            elif os.path.exists(legacy_source_file):
+                # Fall back to the legacy naming format file
+                try:
+                    # Read content from source
+                    with open(legacy_source_file, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    
+                    # Force update the target file
+                    success, file_size = force_file_update(target_file, content)
+                    
+                    if success:
+                        self.status_label.setText(f"Selected option {option} and applied its prompt")
+                        print(f"Applied prompt from {legacy_source_file} to {target_file} (size: {file_size} bytes)")
+                    else:
+                        self.status_label.setText(f"Error applying prompt from option {option}")
+                except Exception as e:
+                    self.status_label.setText(f"Error copying prompt: {str(e)}")
+                    print(f"Error processing from {legacy_source_file} to {target_file}: {str(e)}")
             else:
                 self.status_label.setText(f"Selected option {option} but prompt file not found")
+                print(f"Prompt file not found for option {option} (checked {simple_source_file} and {legacy_source_file})")
                 
             # Create a highlight effect for the selected image
             for opt, frame in self.image_frames.items():
