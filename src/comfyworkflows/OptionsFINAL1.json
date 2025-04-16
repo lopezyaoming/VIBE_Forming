@@ -179,8 +179,8 @@
       ],
       "path": "C:\\CODING\\VIBE\\VIBE_Forming\\input\\COMFYINPUTS\\textOptions",
       "filename_prefix": "A",
-      "filename_delimiter": "_",
-      "filename_number_padding": 4,
+      "filename_delimiter": "",
+      "filename_number_padding": 0,
       "file_extension": ".txt",
       "encoding": "utf-8",
       "filename_suffix": ""
@@ -198,8 +198,8 @@
       ],
       "path": "C:\\CODING\\VIBE\\VIBE_Forming\\input\\COMFYINPUTS\\textOptions",
       "filename_prefix": "B",
-      "filename_delimiter": "_",
-      "filename_number_padding": 4,
+      "filename_delimiter": "",
+      "filename_number_padding": 0,
       "file_extension": ".txt",
       "encoding": "utf-8",
       "filename_suffix": ""
@@ -217,8 +217,8 @@
       ],
       "path": "C:\\CODING\\VIBE\\VIBE_Forming\\input\\COMFYINPUTS\\textOptions",
       "filename_prefix": "C",
-      "filename_delimiter": "_",
-      "filename_number_padding": 4,
+      "filename_delimiter": "",
+      "filename_number_padding": 0,
       "file_extension": ".txt",
       "encoding": "utf-8",
       "filename_suffix": ""
@@ -344,7 +344,8 @@
   },
   "38": {
     "inputs": {
-      "image": "front (3).png"
+      "image": "front.png",
+      "upload": "image"
     },
     "class_type": "LoadImage",
     "_meta": {

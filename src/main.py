@@ -16,6 +16,9 @@ from bpy.types import Panel, Operator, PropertyGroup
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 
+# Base directories
+BASE_DIR = r"C:\CODING\VIBE\VIBE_Forming"
+
 # Render configuration
 RENDER_OUTPUT_DIR = r"C:\CODING\VIBE\VIBE_Forming\input\COMFYINPUTS\blenderRender"
 RENDER_CAMERA_NAME = "RenderCam"
@@ -76,6 +79,38 @@ class PromptProperties(PropertyGroup):
         name="Show Prompt Text",
         description="Show the content of the selected prompt",
         default=False
+    )
+
+# Remesh stages property group
+class RemeshProperties(PropertyGroup):
+    # Toggle for enabling the remesh stages
+    enable_remesh: BoolProperty(
+        name="Enable Remesh",
+        description="Enable staged remesh processing on mesh import",
+        default=False
+    )
+    
+    # Current remesh stage (1, 2, or 3)
+    current_stage: IntProperty(
+        name="Remesh Stage",
+        description="Current remesh processing stage",
+        default=1,
+        min=1,
+        max=3
+    )
+    
+    # Remesh type
+    remesh_types = [
+        ("BLOCKS", "Blocks", "Apply blocks remesh"),
+        ("SMOOTH", "Smooth", "Apply smooth remesh"),
+        ("SHARP", "Sharp", "Apply sharp remesh")
+    ]
+    
+    remesh_type: EnumProperty(
+        name="Remesh Type",
+        description="Type of remesh to apply",
+        items=remesh_types,
+        default="SHARP"
     )
 
 # Add this new class for refreshing images
@@ -185,8 +220,59 @@ class IMAGE_PT_display_panel(bpy.types.Panel):
         layout.separator()
         
         # Generation and terminate buttons
-        layout.operator("object.generate_iteration", text="Generate New Iteration", icon='CAMERA_DATA')
+        row = layout.row(align=True)
+        row.operator("object.generate_iteration", text="Generate New Iteration", icon='CAMERA_DATA')
+        
+        # Add remesh toggle button showing the current stage
+        props = context.scene.remesh_properties
+        stage_text = f"Remesh ({props.current_stage})"
+        remesh_button = row.operator("object.toggle_remesh", text=stage_text, icon='OUTLINER_OB_MESH')
+        
+        # Show the current state with different button colors
+        if props.enable_remesh:
+            row.alert = True  # Make the button red when enabled
+        
+        # Add a separator before terminate button
+        layout.separator(factor=0.5)
         layout.operator("option.terminate_script", text="Terminate Script", icon='X')
+
+# Remesh settings panel
+class REMESH_PT_settings_panel(bpy.types.Panel):
+    bl_label = "Remesh Settings"
+    bl_idname = "REMESH_PT_settings_panel"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'VIBE'
+    bl_options = {'DEFAULT_CLOSED'}  # Panel starts collapsed
+    
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.remesh_properties
+        
+        # Remesh enable toggle
+        layout.prop(props, "enable_remesh", text="Enable Staged Remesh")
+        
+        # Current stage display
+        box = layout.box()
+        box.label(text=f"Current Stage: {props.current_stage}")
+        
+        if props.current_stage == 1:
+            box.label(text="Octree Depth: 3")
+        elif props.current_stage == 2:
+            box.label(text="Octree Depth: 5")
+        else:  # stage 3
+            box.label(text="No remesh applied")
+        
+        # Remesh type selection
+        layout.prop(props, "remesh_type", text="Remesh Type")
+        
+        # Help text
+        help_box = layout.box()
+        help_box.label(text="How It Works:", icon='INFO')
+        help_box.label(text="Stage 1: Octree depth 3")
+        help_box.label(text="Stage 2: Octree depth 5")
+        help_box.label(text="Stage 3: No remesh applied")
+        help_box.label(text="Each import advances the stage")
 
 class OPTION_OT_select(bpy.types.Operator):
     bl_idname = "option.select"
@@ -276,6 +362,38 @@ class OBJECT_OT_generate_iteration(bpy.types.Operator):
             return {'CANCELLED'}
             
         self.report({'INFO'}, "Successfully generated new iteration")
+        return {'FINISHED'}
+
+# Remesh toggle operator
+class OBJECT_OT_toggle_remesh(bpy.types.Operator):
+    bl_idname = "object.toggle_remesh"
+    bl_label = "Toggle Remesh"
+    bl_description = "Toggle the staged remesh functionality"
+    
+    def execute(self, context):
+        # Toggle the enable_remesh property
+        props = context.scene.remesh_properties
+        props.enable_remesh = not props.enable_remesh
+        
+        status = "enabled" if props.enable_remesh else "disabled"
+        stage = props.current_stage
+        
+        # Show a message about the current status
+        self.report({'INFO'}, f"Remesh {status}. Will be applied at stage {stage} on next import")
+        logging.info(f"Remesh {status}. Will be applied at stage {stage} on next import")
+        
+        # Update the remesh state file for UI
+        try:
+            remesh_state_path = os.path.join(os.path.dirname(bpy.data.filepath), "remesh_state.txt")
+            with open(remesh_state_path, "w") as f:
+                f.write(f"enabled={str(props.enable_remesh).lower()}\n")
+                f.write(f"stage={props.current_stage}\n")
+                f.write(f"type={props.remesh_type}\n")
+                f.write(f"timestamp={time.time()}\n")
+            logging.info(f"Updated remesh state file: {remesh_state_path}")
+        except Exception as e:
+            logging.error(f"Error writing remesh state file: {str(e)}")
+        
         return {'FINISHED'}
 
 def get_prompt_content(prompt_file):
@@ -454,6 +572,80 @@ def import_generated_mesh():
         else:
             logging.warning("No active mesh found. Importing without hiding any mesh.")
             
+        # Hide all existing mesh objects before importing the new one
+        logging.info("Hiding selected existing mesh objects...")
+        existing_meshes = []
+        
+        # Keep track of objects to skip (base objects)
+        protected_objects = []
+        
+        # Get a clean list of existing mesh objects to avoid reference errors later
+        try:
+            # Create a safe copy of object names to avoid iterator issues
+            existing_mesh_names = [obj.name for obj in bpy.data.objects if obj.type == 'MESH']
+            logging.info(f"Found {len(existing_mesh_names)} existing mesh objects")
+            
+            # First identify protected objects
+            for obj_name in existing_mesh_names:
+                # Skip objects named 'base' or containing 'base' in their name (case insensitive)
+                if 'base' in obj_name.lower():
+                    protected_objects.append(obj_name)
+                    logging.info(f"Protected object (will stay visible): {obj_name}")
+            
+            # Process each mesh by name to avoid reference errors
+            for obj_name in existing_mesh_names:
+                # Skip if the object is protected
+                if obj_name in protected_objects:
+                    continue
+                    
+                # Only hide selected or previously generated objects
+                try:
+                    # Check if the object still exists in the scene
+                    if obj_name in bpy.data.objects:
+                        obj = bpy.data.objects[obj_name]
+                        # Store selection state to ensure we can check it safely
+                        is_selected = False
+                        try:
+                            is_selected = obj.select_get()
+                        except ReferenceError:
+                            logging.warning(f"Reference error when checking selection of {obj_name}")
+                            continue
+                        except Exception as select_err:
+                            logging.warning(f"Error when checking selection of {obj_name}: {str(select_err)}")
+                            continue
+                            
+                        # Check if this was the previous object (the active object)
+                        is_previous = False
+                        try:
+                            is_previous = (has_active_mesh and active_obj and obj.name == active_obj.name)
+                        except ReferenceError:
+                            is_previous = False
+                            logging.warning(f"Reference error when checking if {obj_name} was the previous object")
+                        except Exception as prev_err:
+                            logging.warning(f"Error when checking if {obj_name} was the previous object: {str(prev_err)}")
+                        
+                        if is_selected or is_previous:
+                            try:
+                                # Double-check the object still exists before hiding
+                                if obj_name in bpy.data.objects:
+                                    obj = bpy.data.objects[obj_name]  # Get a fresh reference
+                                    obj.hide_viewport = True
+                                    obj.hide_render = True
+                                    existing_meshes.append(obj_name)
+                                    logging.info(f"Hidden selected mesh: {obj_name}")
+                            except ReferenceError:
+                                logging.warning(f"Reference error when hiding {obj_name}")
+                            except Exception as hide_err:
+                                logging.warning(f"Error when hiding {obj_name}: {str(hide_err)}")
+                except Exception as e:
+                    logging.error(f"Failed to hide mesh {obj_name}: {str(e)}")
+                    import traceback
+                    logging.error(traceback.format_exc())
+        except Exception as e:
+            logging.error(f"Error processing existing meshes: {str(e)}")
+            
+        logging.info(f"Successfully hidden {len(existing_meshes)} meshes")
+            
         # Deselect all objects
         bpy.ops.object.select_all(action='DESELECT')
         
@@ -555,67 +747,445 @@ def import_generated_mesh():
             bpy.data.objects.remove(empty, do_unlink=True)
             logging.info(f"Removed empty container: {empty.name}")
         
-        # Hide the previous object if it exists
+        # Hide the previous object if it exists (double-check in case our initial hiding missed it)
         if has_active_mesh and previous_obj:
-            previous_obj.hide_viewport = True
-            previous_obj.hide_render = True
-            logging.info(f"Hidden previous object: {previous_obj.name}")
+            try:
+                # Make sure the previous object reference is still valid
+                if previous_obj.name in bpy.data.objects:
+                    previous_obj.hide_viewport = True
+                    previous_obj.hide_render = True
+                    logging.info(f"Hidden previous active object: {previous_obj.name}")
+                    
+                    # Also hide any children the previous object might have
+                    for child in previous_obj.children:
+                        if child.type == 'MESH':
+                            child.hide_viewport = True
+                            child.hide_render = True
+                            logging.info(f"Hidden child object: {child.name}")
+            except ReferenceError:
+                logging.warning("Previous object reference no longer valid, cannot hide it")
+            except Exception as e:
+                logging.error(f"Error hiding previous object: {str(e)}")
         
         # Set the main mesh as active
         bpy.context.view_layer.objects.active = main_mesh
         main_mesh.select_set(True)
         
-        # Set the object's origin to its geometry center
-        bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='BOUNDS')
+        # Ensure the main mesh and its children are visible
+        try:
+            if main_mesh.name in bpy.data.objects:  # Verify the object still exists
+                main_mesh.hide_viewport = False
+                main_mesh.hide_render = False
+                logging.info(f"Made main mesh visible: {main_mesh.name}")
+            
+                # Make sure any children are also visible (with error protection)
+                try:
+                    # First check if children_recursive property exists and is accessible
+                    if hasattr(main_mesh, 'children_recursive'):
+                        for child in main_mesh.children_recursive:
+                            try:
+                                if child.type == 'MESH':
+                                    child.hide_viewport = False
+                                    child.hide_render = False
+                                    logging.info(f"Made child mesh visible: {child.name}")
+                            except ReferenceError:
+                                logging.warning(f"Reference error while trying to access child of {main_mesh.name}")
+                            except Exception as child_error:
+                                logging.error(f"Error processing child: {str(child_error)}")
+                except ReferenceError:
+                    logging.warning("Reference error while accessing children_recursive")
+                except Exception as children_error:
+                    logging.error(f"Error accessing children: {str(children_error)}")
+        except ReferenceError:
+            logging.warning("Main mesh reference is no longer valid - cannot update visibility")
+        except Exception as e:
+            logging.error(f"Error setting main mesh visibility: {str(e)}")
         
-        # Center the object at the world origin
-        main_mesh.location = (0, 0, 0)
+        # Set the object's origin to its geometry center
+        try:
+            if main_mesh.name in bpy.data.objects:  # Check if the object still exists
+                # Set origin to geometry
+                bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='BOUNDS')
+                logging.info("Set object origin to geometry center")
+                
+                # Center the object at the world origin
+                main_mesh.location = (0, 0, 0)
+                logging.info("Centered object at world origin")
+            else:
+                logging.warning("Main mesh no longer exists - skipping origin and location setting")
+        except ReferenceError:
+            logging.warning("Main mesh reference is no longer valid - skipping origin and location setting")
+        except Exception as e:
+            logging.error(f"Error setting object origin and location: {str(e)}")
         
         # Calculate and apply scaling to match the previous object's max dimension
-        current_max_dim = max(main_mesh.dimensions.x, main_mesh.dimensions.y, main_mesh.dimensions.z)
-        logging.info(f"Current mesh max dimension: {current_max_dim}")
-        
-        if current_max_dim > 0:
-            # If a previous object exists, use its dimensions for scaling
-            if has_active_mesh and previous_obj:
-                scale_factor = previous_max_dim / current_max_dim
+        try:
+            if main_mesh.name in bpy.data.objects:  # Check if the object still exists
+                current_max_dim = max(main_mesh.dimensions.x, main_mesh.dimensions.y, main_mesh.dimensions.z)
+                logging.info(f"Current mesh max dimension: {current_max_dim}")
+                
+                if current_max_dim > 0:
+                    # If a previous object exists, use its dimensions for scaling
+                    if has_active_mesh and previous_obj:
+                        scale_factor = previous_max_dim / current_max_dim
+                    else:
+                        # Default scaling if no previous object
+                        scale_factor = 1.0 / current_max_dim  # Scale to unit size
+                        
+                    logging.info(f"Calculated scale factor: {scale_factor}")
+                    
+                    # Apply scaling to main mesh
+                    main_mesh.scale = (scale_factor, scale_factor, scale_factor)
+                    
+                    # Apply the scale
+                    try:
+                        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+                        logging.info(f"Applied scaling factor {scale_factor}")
+                    except Exception as apply_error:
+                        logging.error(f"Error applying transform: {str(apply_error)}")
+                    
+                    # Check if we need to rotate the model based on X and Y dimensions
+                    current_x_larger_than_y = main_mesh.dimensions.x >= main_mesh.dimensions.y
+                    
+                    # If previous object exists and dimension orientation doesn't match
+                    if has_active_mesh and previous_obj and (current_x_larger_than_y != previous_x_larger_than_y):
+                        logging.info("X/Y dimension orientation mismatch detected, rotating object 45 degrees")
+                        
+                        # Rotate 45 degrees counterclockwise around Z axis
+                        # Convert degrees to radians (45 degrees = π/4 radians)
+                        rotation_angle = math.radians(45)
+                        
+                        # Rotate the object
+                        main_mesh.rotation_euler.z += rotation_angle
+                        
+                        # Apply the rotation
+                        try:
+                            bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
+                            logging.info("Applied 45 degree counterclockwise rotation")
+                        except Exception as rot_error:
+                            logging.error(f"Error applying rotation: {str(rot_error)}")
+                else:
+                    logging.warning("Imported mesh has zero dimensions, couldn't scale properly")
             else:
-                # Default scaling if no previous object
-                scale_factor = 1.0 / current_max_dim  # Scale to unit size
-                
-            logging.info(f"Calculated scale factor: {scale_factor}")
-            
-            # Apply scaling to main mesh and its children
-            main_mesh.scale = (scale_factor, scale_factor, scale_factor)
-            
-            # Apply the scale
-            bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-            logging.info(f"Applied scaling factor {scale_factor}")
-            
-            # Check if we need to rotate the model based on X and Y dimensions
-            current_x_larger_than_y = main_mesh.dimensions.x >= main_mesh.dimensions.y
-            
-            # If previous object exists and dimension orientation doesn't match
-            if has_active_mesh and previous_obj and (current_x_larger_than_y != previous_x_larger_than_y):
-                logging.info("X/Y dimension orientation mismatch detected, rotating object 45 degrees")
-                
-                # Rotate 45 degrees counterclockwise around Z axis
-                # Convert degrees to radians (45 degrees = π/4 radians)
-                rotation_angle = math.radians(45)
-                
-                # Rotate the object
-                main_mesh.rotation_euler.z += rotation_angle
-                
-                # Apply the rotation
-                bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
-                logging.info("Applied 45 degree counterclockwise rotation")
-        else:
-            logging.warning("Imported mesh has zero dimensions, couldn't scale properly")
+                logging.warning("Main mesh no longer exists - skipping scaling and rotation")
+        except ReferenceError:
+            logging.warning("Main mesh reference is no longer valid - skipping scaling and rotation")
+        except Exception as e:
+            logging.error(f"Error during scaling and rotation: {str(e)}")
+            import traceback
+            logging.error(traceback.format_exc())
         
-        logging.info(f"Successfully imported and processed mesh: {main_mesh.name}")
-        return True
+        # Apply staged remesh if enabled
+        if bpy.context.scene.remesh_properties.enable_remesh:
+            stage = bpy.context.scene.remesh_properties.current_stage
+            remesh_type = bpy.context.scene.remesh_properties.remesh_type
+            
+            logging.info(f"Applying staged remesh: Stage {stage}, Type {remesh_type}")
+            
+            # Store the main_mesh name so we can look it up again if needed
+            main_mesh_name = ""
+            
+            # Make sure main_mesh still exists and is valid before applying remesh
+            try:
+                # Verify main_mesh is still a valid reference
+                if not main_mesh or not hasattr(main_mesh, 'name'):
+                    logging.error("Cannot apply remesh: Invalid main mesh reference")
+                    return False
+                    
+                # Store the name for later reference
+                main_mesh_name = main_mesh.name
+                
+                # Verify the object exists in the scene
+                if main_mesh_name in bpy.data.objects:
+                    # Get a fresh reference to the mesh
+                    mesh_obj = bpy.data.objects[main_mesh_name]
+                    
+                    # Make sure it's a mesh
+                    if mesh_obj.type == 'MESH':
+                        # Deselect all objects and select only our target mesh
+                        bpy.ops.object.select_all(action='DESELECT')
+                        mesh_obj.select_set(True)
+                        bpy.context.view_layer.objects.active = mesh_obj
+                        
+                        # Now apply the remesh using the fresh reference
+                        remesh_result = apply_staged_remesh(mesh_obj, stage, remesh_type)
+                        
+                        if remesh_result:
+                            # Increment stage for next import
+                            next_stage = stage + 1
+                            if next_stage > 3:
+                                next_stage = 1  # Reset to stage 1 if we're past stage 3
+                                
+                            bpy.context.scene.remesh_properties.current_stage = next_stage
+                            logging.info(f"Incremented remesh stage to {next_stage}")
+                        else:
+                            logging.error("Failed to apply remesh")
+                    else:
+                        logging.error(f"Cannot apply remesh: Object {main_mesh_name} is not a mesh")
+                else:
+                    logging.error(f"Cannot apply remesh: Object {main_mesh_name} not found in the scene")
+            except ReferenceError:
+                logging.error("Cannot apply remesh: Main mesh reference is no longer valid")
+                
+                # If we stored the name, try to use it to get a fresh reference
+                if main_mesh_name and main_mesh_name in bpy.data.objects:
+                    logging.info(f"Attempting remesh with fresh reference to {main_mesh_name}")
+                    mesh_obj = bpy.data.objects[main_mesh_name]
+                    remesh_result = apply_staged_remesh(mesh_obj, stage, remesh_type)
+                    
+                    if remesh_result:
+                        next_stage = stage + 1
+                        if next_stage > 3:
+                            next_stage = 1
+                        bpy.context.scene.remesh_properties.current_stage = next_stage
+                        logging.info(f"Recovered and incremented remesh stage to {next_stage}")
+            except Exception as e:
+                logging.error(f"Error preparing for remesh: {str(e)}")
+                import traceback
+                logging.error(traceback.format_exc())
+        
+        # Make sure the main_mesh still exists before returning
+        try:
+            # Store the mesh name first to avoid reference errors
+            mesh_name = ""
+            
+            # Carefully extract the name
+            try:
+                if main_mesh and hasattr(main_mesh, 'name'):
+                    mesh_name = main_mesh.name
+                else:
+                    logging.error("Main mesh reference is invalid")
+                    # Try to find any active mesh as a fallback
+                    if bpy.context.active_object and bpy.context.active_object.type == 'MESH':
+                        logging.info(f"Using active mesh as fallback: {bpy.context.active_object.name}")
+                        return True
+                    return False
+            except ReferenceError:
+                logging.error("Cannot access main mesh name (reference error)")
+                # Try to find any active mesh as a fallback
+                if bpy.context.active_object and bpy.context.active_object.type == 'MESH':
+                    logging.info(f"Using active mesh as fallback: {bpy.context.active_object.name}")
+                    return True
+                return False
+            
+            # Ensure the object is still in the Blender data using the stored name
+            if mesh_name and mesh_name in bpy.data.objects:
+                # Double-check it's a mesh
+                if bpy.data.objects[mesh_name].type == 'MESH':
+                    logging.info(f"Successfully imported and processed mesh: {mesh_name}")
+                    return True
+                else:
+                    logging.error(f"Object {mesh_name} exists but is no longer a mesh")
+            else:
+                if mesh_name:
+                    logging.error(f"Object {mesh_name} no longer exists in the scene")
+                else:
+                    logging.error("No valid mesh name could be determined")
+                
+            # Try to find another active mesh
+            if bpy.context.active_object and bpy.context.active_object.type == 'MESH':
+                logging.info(f"Found alternative active mesh: {bpy.context.active_object.name}")
+                return True
+                
+            return False
+        except ReferenceError:
+            logging.error("Main mesh was removed during processing")
+            # Try to find another active mesh
+            if bpy.context.active_object and bpy.context.active_object.type == 'MESH':
+                logging.info(f"Found alternative active mesh: {bpy.context.active_object.name}")
+                return True
+            return False
+        except Exception as e:
+            logging.error(f"Error in final mesh verification: {str(e)}")
+            import traceback
+            logging.error(traceback.format_exc())
+            return False
     except Exception as e:
         logging.error(f"Error importing generated mesh: {str(e)}")
+        import traceback
+        logging.error(traceback.format_exc())
+        return False
+
+def apply_staged_remesh(main_mesh, stage, remesh_type):
+    """Apply a remesh modifier based on the current stage
+    
+    Args:
+        main_mesh: The mesh object to apply the remesh to
+        stage: The current remesh stage (1, 2, or 3)
+        remesh_type: The type of remesh to apply (BLOCKS, SMOOTH, SHARP)
+        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        logging.info(f"Starting remesh process - Stage {stage}, Type: {remesh_type}")
+        
+        # Verify we have a valid mesh object
+        if not main_mesh:
+            logging.error("Cannot apply remesh: No mesh provided")
+            return False
+        
+        # Get the name now while reference is still valid
+        mesh_name = ""
+        try:
+            # Check if this is even a blender object
+            if not hasattr(main_mesh, 'name'):
+                logging.error("Cannot apply remesh: Invalid object (not a Blender object)")
+                return False
+                
+            mesh_name = main_mesh.name
+            logging.info(f"Applying remesh to object: {mesh_name}")
+        except ReferenceError:
+            logging.error("Cannot apply remesh: Cannot access object name (reference error)")
+            return False
+        except Exception as name_error:
+            logging.error(f"Cannot access object properties: {str(name_error)}")
+            return False
+            
+        # Verify the object still exists in the scene using the name
+        if mesh_name not in bpy.data.objects:
+            logging.error(f"Cannot apply remesh: Object '{mesh_name}' not found in scene")
+            return False
+            
+        # Get a fresh reference to the object
+        mesh_obj = bpy.data.objects.get(mesh_name)
+        if not mesh_obj:
+            logging.error(f"Cannot apply remesh: Failed to get object '{mesh_name}'")
+            return False
+            
+        # Verify it's a mesh
+        if mesh_obj.type != 'MESH':
+            logging.error(f"Cannot apply remesh: Object '{mesh_name}' is not a mesh")
+            return False
+            
+        logging.info(f"Object verification passed for '{mesh_name}'")
+        
+        # Early exit for stage 3 (no remesh)
+        if stage == 3:
+            logging.info("Stage 3: No remesh applied (as configured)")
+            return True
+            
+        # Select and make the mesh active - use the fresh reference
+        try:
+            # Deselect all objects first
+            logging.info("Deselecting all objects")
+            bpy.ops.object.select_all(action='DESELECT')
+            
+            # Select our target mesh
+            logging.info(f"Selecting mesh: {mesh_obj.name}")
+            mesh_obj.select_set(True)
+            bpy.context.view_layer.objects.active = mesh_obj
+        except Exception as select_error:
+            logging.error(f"Failed to select mesh: {str(select_error)}")
+            return False
+        
+        # Remove any existing remesh modifiers
+        try:
+            mod_count = 0
+            modifiers_to_remove = []
+            
+            # Create a safe copy of modifiers to avoid reference errors
+            for mod in mesh_obj.modifiers:
+                if mod.type == 'REMESH':
+                    modifiers_to_remove.append(mod.name)
+                    
+            for mod_name in modifiers_to_remove:
+                mod = mesh_obj.modifiers.get(mod_name)
+                if mod:
+                    mesh_obj.modifiers.remove(mod)
+                    mod_count += 1
+            if mod_count > 0:
+                logging.info(f"Removed {mod_count} existing remesh modifiers")
+        except Exception as mod_error:
+            logging.error(f"Error removing existing modifiers: {str(mod_error)}")
+            # Continue anyway - this isn't fatal
+        
+        # Create a new remesh modifier
+        try:
+            logging.info("Creating new remesh modifier")
+            remesh_mod = mesh_obj.modifiers.new(name="StageRemesh", type='REMESH')
+            
+            # Set the remesh mode based on type
+            if remesh_type == 'BLOCKS':
+                remesh_mod.mode = 'BLOCKS'
+            elif remesh_type == 'SMOOTH':
+                remesh_mod.mode = 'SMOOTH'
+            else:  # Default to SHARP
+                remesh_mod.mode = 'SHARP'
+            
+            # Set octree depth based on stage
+            if stage == 1:
+                remesh_mod.octree_depth = 3
+            else:  # stage 2
+                remesh_mod.octree_depth = 5
+            
+            # Set remove disconnected to False
+            remesh_mod.use_remove_disconnected = False
+            
+            logging.info(f"Applied {remesh_type} remesh with octree depth {remesh_mod.octree_depth}")
+        except Exception as create_error:
+            logging.error(f"Failed to create remesh modifier: {str(create_error)}")
+            return False
+        
+        # Apply the modifier with robust error handling
+        try:
+            logging.info("Applying remesh modifier")
+            # Ensure we're in object mode
+            if bpy.context.mode != 'OBJECT':
+                bpy.ops.object.mode_set(mode='OBJECT')
+                
+            # Do a final check that the object and modifier still exist
+            if mesh_name in bpy.data.objects and "StageRemesh" in bpy.data.objects[mesh_name].modifiers:
+                # Apply the modifier
+                bpy.ops.object.modifier_apply(modifier="StageRemesh")
+                logging.info("Remesh modifier applied successfully!")
+            else:
+                logging.error("Object or modifier no longer exists, cannot apply")
+                return False
+        except Exception as apply_error:
+            logging.error(f"Error applying modifier: {str(apply_error)}")
+            # Try a different approach - sometimes the modifier apply fails
+            try:
+                logging.info("Trying alternate method: convert to mesh")
+                # Check if the object still exists
+                if mesh_name in bpy.data.objects:
+                    # Ensure object is still selected
+                    mesh_obj = bpy.data.objects[mesh_name]  # Get fresh reference
+                    mesh_obj.select_set(True)
+                    bpy.context.view_layer.objects.active = mesh_obj
+                    
+                    # Ensure we're in object mode
+                    if bpy.context.mode != 'OBJECT':
+                        bpy.ops.object.mode_set(mode='OBJECT')
+                        
+                    # Try converting to mesh
+                    bpy.ops.object.convert(target='MESH')
+                    logging.info("Applied remesh by converting to mesh")
+                else:
+                    logging.error("Object no longer exists for alternative method")
+                    return False
+            except Exception as convert_error:
+                logging.error(f"Failed to apply remesh: {str(convert_error)}")
+                return False
+        
+        # Verify the mesh still exists after remeshing - get fresh reference
+        try:
+            # Use a safe approach to check existence
+            if mesh_name in bpy.data.objects:
+                final_obj = bpy.data.objects[mesh_name]
+                if final_obj.type == 'MESH':
+                    logging.info(f"Remesh successfully applied to {mesh_name}")
+                    return True
+                else:
+                    logging.error(f"Object {mesh_name} exists but is no longer a mesh")
+            else:
+                logging.error(f"Object {mesh_name} no longer exists after remeshing")
+            return False
+        except Exception as verify_error:
+            logging.error(f"Error verifying mesh after remesh: {str(verify_error)}")
+            return False
+    except Exception as e:
+        logging.error(f"Error applying remesh: {str(e)}")
         import traceback
         logging.error(traceback.format_exc())
         return False
@@ -905,7 +1475,71 @@ def ensure_directories():
             except Exception as e:
                 logging.error(f"Failed to create default prompt file {filename}: {e}")
 
-# Timer function to check if images have been updated
+def check_remesh_state():
+    """Check the remesh state from the UI and update Blender properties"""
+    try:
+        # Use global BASE_DIR
+        remesh_state_path = os.path.join(BASE_DIR, "remesh_state.txt")
+        
+        if not os.path.exists(remesh_state_path):
+            logging.info("No remesh state file found")
+            return
+            
+        # Parse the state file
+        enabled = False
+        stage = 1
+        remesh_type = "SHARP"
+        
+        with open(remesh_state_path, "r") as f:
+            for line in f:
+                if line.startswith("enabled="):
+                    enabled_text = line.strip().split("=")[1].lower()
+                    enabled = (enabled_text == "true")
+                elif line.startswith("stage="):
+                    try:
+                        stage = int(line.strip().split("=")[1])
+                    except:
+                        stage = 1
+                elif line.startswith("type="):
+                    remesh_type = line.strip().split("=")[1].upper()
+        
+        # Make sure the scene exists and has remesh_properties before updating
+        if not hasattr(bpy.context, 'scene') or not bpy.context.scene:
+            logging.error("Cannot update remesh state: No active scene")
+            return
+            
+        if not hasattr(bpy.context.scene, 'remesh_properties'):
+            logging.error("Cannot update remesh state: remesh_properties not found in scene")
+            return
+        
+        # Update Blender properties
+        try:
+            bpy.context.scene.remesh_properties.enable_remesh = enabled
+            bpy.context.scene.remesh_properties.current_stage = stage
+            
+            # Set remesh type if it's a valid value
+            if remesh_type in ["BLOCKS", "SMOOTH", "SHARP"]:
+                bpy.context.scene.remesh_properties.remesh_type = remesh_type
+                
+            logging.info(f"Updated remesh state: enabled={enabled}, stage={stage}, type={remesh_type}")
+        except Exception as props_error:
+            logging.error(f"Error updating remesh properties: {str(props_error)}")
+        
+        # Write back with updated values (in case Blender changed them)
+        try:
+            with open(remesh_state_path, "w") as f:
+                f.write(f"enabled={str(bpy.context.scene.remesh_properties.enable_remesh).lower()}\n")
+                f.write(f"stage={bpy.context.scene.remesh_properties.current_stage}\n")
+                f.write(f"type={bpy.context.scene.remesh_properties.remesh_type}\n")
+                f.write(f"timestamp={time.time()}\n")
+        except Exception as write_error:
+            logging.error(f"Error writing back remesh state: {str(write_error)}")
+        
+    except Exception as e:
+        logging.error(f"Error checking remesh state: {str(e)}")
+        import traceback
+        logging.error(traceback.format_exc())
+
 def check_image_updates(operator_report_func, process):
     # Check if process is still running
     if process.poll() is None:
@@ -1116,47 +1750,45 @@ def check_render_requests():
 
 # Check for import requests from UI
 def check_import_requests():
-    """Check if there's an import request from the UI and process it"""
-    if os.path.exists(IMPORT_REQUEST_FILE):
-        logging.info(f"Found import request file: {IMPORT_REQUEST_FILE}")
-        try:
-            # Read request details
-            with open(IMPORT_REQUEST_FILE, 'r') as f:
-                request_details = f.read()
-                
-            logging.info(f"Import request details: {request_details}")
-            
-            # Delete the request file
-            os.remove(IMPORT_REQUEST_FILE)
-            
-            # Process the import
-            success = import_generated_mesh()
-            
-            # Write completion status
-            with open(IMPORT_COMPLETE_FILE, 'w') as f:
-                if success:
-                    f.write("SUCCESS")
-                    logging.info("Import completed successfully")
-                else:
-                    f.write("ERROR: Import failed")
-                    logging.info("Import failed")
-                    
-            return True
-        except Exception as e:
-            logging.error(f"Error processing import request: {e}")
-            import traceback
-            logging.error(traceback.format_exc())
-            
-            # Write error status
-            try:
-                with open(IMPORT_COMPLETE_FILE, 'w') as f:
-                    f.write(f"ERROR: {str(e)}")
-            except:
-                pass
-                
+    """Check for requests to import generated models"""
+    try:
+        # Use the global BASE_DIR, not a local definition
+        request_path = os.path.join(BASE_DIR, "import_request.txt")
+        
+        if not os.path.exists(request_path):
             return False
-    
-    return False
+            
+        # Read the request file
+        with open(request_path, "r") as f:
+            request_content = f.read()
+            
+        # Delete the request file
+        try:
+            os.remove(request_path)
+            logging.info(f"Deleted import request file")
+        except Exception as e:
+            logging.warning(f"Could not delete request file: {str(e)}")
+        
+        logging.info(f"Found import request: {request_content}")
+        
+        # Check remesh state from UI
+        check_remesh_state()
+        
+        # Process the import
+        success = import_generated_mesh()
+        
+        # Write completion status
+        status_message = "SUCCESS" if success else "FAILURE"
+        with open(os.path.join(BASE_DIR, "import_complete.txt"), "w") as f:
+            f.write(f"Status: {status_message}\n")
+            f.write(f"Timestamp: {time.time()}\n")
+            
+        return success
+    except Exception as e:
+        logging.error(f"Error checking import requests: {str(e)}")
+        import traceback
+        logging.error(traceback.format_exc())
+        return False
 
 # Timer function to check for render and import requests
 def check_requests_timer():
@@ -1183,19 +1815,26 @@ def register():
     # Register property groups
     bpy.utils.register_class(CustomRequestProperties)
     bpy.utils.register_class(PromptProperties)
+    bpy.utils.register_class(RemeshProperties)
     bpy.types.Scene.prompt_properties = PointerProperty(type=PromptProperties)
     bpy.types.Scene.custom_request_properties = PointerProperty(type=CustomRequestProperties)
+    bpy.types.Scene.remesh_properties = PointerProperty(type=RemeshProperties)
     
-    # Register operators and UI
-    bpy.utils.register_class(IMAGE_OT_refresh)  # Register the new refresh operator
-    bpy.utils.register_class(REQUEST_OT_submit)  # Register the new submit operator
+    # Register operators and panels
     bpy.utils.register_class(IMAGE_PT_display_panel)
     bpy.utils.register_class(OPTION_OT_select)
+    bpy.utils.register_class(REQUEST_OT_submit)
+    bpy.utils.register_class(IMAGE_OT_refresh)
     bpy.utils.register_class(OPTION_OT_terminate_script)
     bpy.utils.register_class(OBJECT_OT_generate_iteration)
-    
+    bpy.utils.register_class(OBJECT_OT_toggle_remesh)
+    bpy.utils.register_class(REMESH_PT_settings_panel)
+
     # Create render camera
     ensure_render_camera()
+    
+    # Check the remesh state from UI
+    check_remesh_state()
     
     # Load images on startup
     try:
@@ -1221,16 +1860,17 @@ def unregister():
         # Unregister property groups
         del bpy.types.Scene.prompt_properties
         del bpy.types.Scene.custom_request_properties
+        del bpy.types.Scene.remesh_properties
         
-        # Unregister operators and UI
-        bpy.utils.unregister_class(OBJECT_OT_generate_iteration)
-        bpy.utils.unregister_class(OPTION_OT_terminate_script)
-        bpy.utils.unregister_class(OPTION_OT_select)
+        # Unregister operators and panels
         bpy.utils.unregister_class(IMAGE_PT_display_panel)
+        bpy.utils.unregister_class(OPTION_OT_select)
         bpy.utils.unregister_class(REQUEST_OT_submit)
         bpy.utils.unregister_class(IMAGE_OT_refresh)
-        bpy.utils.unregister_class(PromptProperties)
-        bpy.utils.unregister_class(CustomRequestProperties)
+        bpy.utils.unregister_class(OPTION_OT_terminate_script)
+        bpy.utils.unregister_class(OBJECT_OT_generate_iteration)
+        bpy.utils.unregister_class(OBJECT_OT_toggle_remesh)
+        bpy.utils.unregister_class(REMESH_PT_settings_panel)
         
         logging.info("Successfully unregistered VIBE panel")
     except Exception as e:

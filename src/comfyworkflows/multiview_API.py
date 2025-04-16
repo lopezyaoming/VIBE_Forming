@@ -42,15 +42,63 @@ def check_comfyui_server():
 def queue_prompt(prompt):
     """Send a prompt to the ComfyUI server"""
     try:
-        # Modify the workflow to prevent caching - set random seeds for all KSamplers
-        sampler_nodes = ["3", "25", "35", "147"]  # Updated KSampler node IDs for MultiViewFINAL1
-        for node_id in sampler_nodes:
+        # Update image paths and force reload
+        image_dir = "C:\\CODING\\VIBE\\VIBE_Forming\\input\\COMFYINPUTS\\blenderRender"
+        image_nodes = {
+            "153": "front.png",  # Front view
+            "146": "left.png",   # Left view
+            "151": "right.png",  # Right view
+            "147": "back.png"    # Back view
+        }
+        
+        # Add timestamp to ensure images are reloaded
+        timestamp = int(time.time())
+        
+        # Update all image nodes with correct paths and force reload
+        for node_id, filename in image_nodes.items():
             if node_id in prompt and "inputs" in prompt[node_id]:
-                prompt[node_id]["inputs"]["seed"] = random.randint(0, 999999999)
-                print(f"Set random seed for KSampler node {node_id}")
+                # Check if file exists
+                file_path = os.path.join(image_dir, filename)
+                if os.path.exists(file_path):
+                    prompt[node_id]["inputs"]["image"] = file_path
+                    
+                    # Add or update reload parameters to force fresh load
+                    if "reload_mode" in prompt[node_id]["inputs"]:
+                        prompt[node_id]["inputs"]["reload_mode"] = f"always-{timestamp}"
+                    elif "force_reload" in prompt[node_id]["inputs"]:
+                        prompt[node_id]["inputs"]["force_reload"] = True
+                    
+                    print(f"Set node {node_id} to load {file_path} with reload enabled")
+                else:
+                    print(f"WARNING: Image not found at {file_path}")
+        
+        # Define consistent KSampler node IDs in all the workflows
+        # These are the node IDs for the MultiViewFINAL1.json workflow
+        sampler_nodes = {
+            "3": {"seed": random.randint(0, 999999999), "steps": 8, "cfg": 2.2},  
+            "35": {"seed": random.randint(0, 999999999), "steps": 8, "cfg": 2.2},
+            "147": {"seed": random.randint(0, 999999999), "steps": 8, "cfg": 2.2}
+        }
+        
+        # Apply consistent settings to all KSampler nodes
+        for node_id, settings in sampler_nodes.items():
+            if node_id in prompt and "inputs" in prompt[node_id]:
+                # Apply all settings
+                for param, value in settings.items():
+                    prompt[node_id]["inputs"][param] = value
+                print(f"Set {len(settings)} parameters for KSampler node {node_id}")
+                
+                # Ensure scheduler is consistent
+                if "scheduler" in prompt[node_id]["inputs"]:
+                    prompt[node_id]["inputs"]["scheduler"] = "simple"
+                    
+                # Ensure sampler_name is consistent
+                if "sampler_name" in prompt[node_id]["inputs"]:
+                    prompt[node_id]["inputs"]["sampler_name"] = "lcm"
         
         # Ensure consistent filename for export nodes without timestamps
         if "123" in prompt and "inputs" in prompt["123"]:  # Hy3DExportMesh node
+            # Set a consistent model name
             if "filename_prefix" in prompt["123"]["inputs"]:
                 prompt["123"]["inputs"]["filename_prefix"] = "model"  # Consistent name for 3D model
                 print("Set consistent filename prefix for 3D model export node")
@@ -60,10 +108,13 @@ def queue_prompt(prompt):
                 prompt["123"]["inputs"]["file_format"] = "glb"
                 print("Set file format to glb for 3D model export node")
                 
-            # Set output path if missing
-            if "output_path" not in prompt["123"]["inputs"]:
-                prompt["123"]["inputs"]["output_path"] = TARGET_OUTPUT
-                print(f"Set output path to {TARGET_OUTPUT} for 3D model export node")
+            # Set output path if needed
+            if "output_path" in prompt["123"]["inputs"]:
+                # Only set if it's empty or invalid
+                current_path = prompt["123"]["inputs"]["output_path"]
+                if not current_path or not os.path.exists(current_path):
+                    prompt["123"]["inputs"]["output_path"] = TARGET_OUTPUT
+                    print(f"Set output path to {TARGET_OUTPUT} for 3D model export node")
                 
             # Ensure save_file is enabled
             prompt["123"]["inputs"]["save_file"] = True
@@ -77,13 +128,11 @@ def queue_prompt(prompt):
         if "102" in prompt and "inputs" in prompt["102"]:  # Load Text File node
             if "file_path" in prompt["102"]["inputs"] and os.path.exists(prompt_txt_path):
                 try:
-                    # Instead of creating a temp file, add a timestamp to the dictionary_name
-                    # This will force ComfyUI to consider this as a new configuration
+                    # Add timestamp to dictionary_name to force reload
                     timestamp = int(time.time())
                     
                     # Keep the original file path but change the dictionary_name
                     if "dictionary_name" in prompt["102"]["inputs"]:
-                        # Add timestamp to dictionary_name to force reload
                         original_dict_name = prompt["102"]["inputs"]["dictionary_name"]
                         prompt["102"]["inputs"]["dictionary_name"] = f"{original_dict_name}_{timestamp}"
                         print(f"Added timestamp to dictionary_name to force reload: {prompt['102']['inputs']['dictionary_name']}")
@@ -99,15 +148,20 @@ def queue_prompt(prompt):
         
         # Set Hy3DGenerateMeshMultiView parameters
         if "161" in prompt and "inputs" in prompt["161"]:  # Updated node ID for MultiViewFINAL1
-            # Set a random seed for mesh generation
-            prompt["161"]["inputs"]["seed"] = random.randint(0, 999999999)
-            print(f"Set random seed for Hy3DGenerateMeshMultiView node")
+            # Use consistent mesh generation settings
+            mesh_settings = {
+                "seed": random.randint(0, 999999999),
+                "scheduler": "FlowMatchEulerDiscreteScheduler",
+                "steps": 30,
+                "guidance_scale": 5.5
+            }
             
-            # Ensure proper scheduler and guidance scale
-            prompt["161"]["inputs"]["scheduler"] = "FlowMatchEulerDiscreteScheduler"
-            prompt["161"]["inputs"]["steps"] = 30
-            prompt["161"]["inputs"]["guidance_scale"] = 5.5
-            print("Set optimal mesh generation parameters")
+            # Apply all settings
+            for param, value in mesh_settings.items():
+                if param in prompt["161"]["inputs"]:
+                    prompt["161"]["inputs"][param] = value
+            
+            print(f"Set optimal mesh generation parameters for node 161")
         
         # Queue the prompt
         p = {"prompt": prompt, "client_id": client_id}
@@ -177,6 +231,41 @@ def main():
     if not check_comfyui_server():
         print("ERROR: ComfyUI server is not running. Please start ComfyUI first.")
         sys.exit(1)
+    
+    # Verify input image directory and files
+    input_image_dir = "C:\\CODING\\VIBE\\VIBE_Forming\\input\\COMFYINPUTS\\blenderRender"
+    required_images = ["front.png", "left.png", "right.png", "back.png"]
+    
+    # Create input directory if it doesn't exist
+    if not os.path.exists(input_image_dir):
+        print(f"Creating input image directory: {input_image_dir}")
+        try:
+            os.makedirs(input_image_dir, exist_ok=True)
+            print(f"Successfully created directory: {input_image_dir}")
+        except Exception as e:
+            print(f"ERROR: Failed to create input directory: {str(e)}")
+            sys.exit(1)
+    
+    # Check each required image
+    missing_images = []
+    for image_name in required_images:
+        image_path = os.path.join(input_image_dir, image_name)
+        if not os.path.exists(image_path):
+            missing_images.append(image_name)
+            print(f"WARNING: Required image not found: {image_path}")
+        else:
+            # Verify the image is readable
+            try:
+                with open(image_path, "rb") as f:
+                    f.read(10)  # Read first 10 bytes to verify file is accessible
+                print(f"Found and verified image: {image_path}")
+            except Exception as e:
+                print(f"ERROR: Cannot read image {image_path}: {str(e)}")
+                missing_images.append(image_name)
+    
+    if missing_images:
+        print(f"WARNING: Missing {len(missing_images)} required images: {', '.join(missing_images)}")
+        print("The mesh generation may not work correctly without all required images.")
         
     # Check if output directory exists
     if not os.path.exists(TARGET_OUTPUT):

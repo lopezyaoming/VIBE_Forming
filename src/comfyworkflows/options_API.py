@@ -26,6 +26,41 @@ print(f"Text options directory set to: {TEXT_OPTIONS_DIR}")
 def queue_prompt(prompt):
     """Send a prompt to the ComfyUI server"""
     try:
+        # Set the LoadImage node to use front.png from the correct directory
+        input_image_path = "C:\\CODING\\VIBE\\VIBE_Forming\\input\\COMFYINPUTS\\blenderRender\\front.png"
+        if "38" in prompt and "inputs" in prompt["38"]:
+            # Check if file exists
+            if os.path.exists(input_image_path):
+                # Add timestamp to force reload
+                timestamp = int(time.time())
+                prompt["38"]["inputs"]["image"] = input_image_path
+                
+                # Add or update the reload parameter to force a fresh load each time
+                if "reload_mode" in prompt["38"]["inputs"]:
+                    prompt["38"]["inputs"]["reload_mode"] = f"always-{timestamp}"
+                elif "force_reload" in prompt["38"]["inputs"]:
+                    prompt["38"]["inputs"]["force_reload"] = True
+                
+                print(f"Set input image to {input_image_path} with reload enabled")
+            else:
+                print(f"WARNING: Input image not found at {input_image_path}")
+        
+        # Set the Load Text File node to use input.txt and force reload
+        input_txt_path = "C:\\CODING\\VIBE\\VIBE_Forming\\input\\input.txt"
+        if "12" in prompt and "inputs" in prompt["12"]:
+            # Check if file exists
+            if os.path.exists(input_txt_path):
+                # Set the correct path
+                prompt["12"]["inputs"]["file_path"] = input_txt_path
+                
+                # Add timestamp to force reload by updating dictionary_name
+                timestamp = int(time.time())
+                prompt["12"]["inputs"]["dictionary_name"] = f"input_{timestamp}"
+                
+                print(f"Set input text to {input_txt_path} with reload enabled")
+            else:
+                print(f"WARNING: Input text file not found at {input_txt_path}")
+        
         # Modify the workflow to prevent caching
         if "45" in prompt and "inputs" in prompt["45"]:
             prompt["45"]["inputs"]["seed"] = random.randint(0, 999999999)  # Random seed for KSampler
@@ -212,6 +247,64 @@ def main():
         except Exception as e:
             print(f"ERROR: Failed to create directory: {str(e)}")
             sys.exit(1)
+            
+    # Verify the input image directory and file
+    input_image_dir = "C:\\CODING\\VIBE\\VIBE_Forming\\input\\COMFYINPUTS\\blenderRender"
+    input_image_path = os.path.join(input_image_dir, "front.png")
+    
+    if not os.path.exists(input_image_dir):
+        print(f"Creating input image directory: {input_image_dir}")
+        try:
+            os.makedirs(input_image_dir, exist_ok=True)
+            print(f"Successfully created directory: {input_image_dir}")
+        except Exception as e:
+            print(f"ERROR: Failed to create input directory: {str(e)}")
+            sys.exit(1)
+    
+    if not os.path.exists(input_image_path):
+        print(f"WARNING: Input image not found at {input_image_path}")
+        print("Please ensure the front.png file exists before running the workflow")
+    else:
+        print(f"Found input image at {input_image_path}")
+        # Check image readability
+        try:
+            with open(input_image_path, "rb") as f:
+                f.read(10)  # Read first 10 bytes to verify file is accessible
+            print("Input image verified and readable")
+        except Exception as e:
+            print(f"ERROR: Cannot read input image: {str(e)}")
+    
+    # Verify the input.txt file
+    input_txt_path = "C:\\CODING\\VIBE\\VIBE_Forming\\input\\input.txt"
+    input_txt_dir = os.path.dirname(input_txt_path)
+    
+    if not os.path.exists(input_txt_dir):
+        print(f"Creating input directory: {input_txt_dir}")
+        try:
+            os.makedirs(input_txt_dir, exist_ok=True)
+            print(f"Successfully created directory: {input_txt_dir}")
+        except Exception as e:
+            print(f"ERROR: Failed to create input directory: {str(e)}")
+            sys.exit(1)
+    
+    if not os.path.exists(input_txt_path):
+        print(f"WARNING: Input text file not found at {input_txt_path}")
+        print("Creating a blank input.txt file...")
+        try:
+            with open(input_txt_path, "w") as f:
+                f.write("Sample prompt")
+            print(f"Created default input.txt file at {input_txt_path}")
+        except Exception as e:
+            print(f"ERROR: Cannot create input.txt: {str(e)}")
+    else:
+        print(f"Found input text file at {input_txt_path}")
+        # Check file readability
+        try:
+            with open(input_txt_path, "r") as f:
+                content = f.read()
+            print(f"Input text file verified and readable. Content: '{content[:30]}{'...' if len(content) > 30 else ''}'")
+        except Exception as e:
+            print(f"ERROR: Cannot read input text file: {str(e)}")
     
     # Test write permissions
     try:
@@ -404,39 +497,49 @@ def main():
                 else:
                     print(f"Source image {source_path} does not exist")
             
-            # Check if we have any prompt texts and save them with simpler naming
+            # ALWAYS create simple A.txt, B.txt, C.txt files (overwrite existing numbered files)
+            print("\nEnsuring text files have simple names (A.txt, B.txt, C.txt)")
             for letter in ['A', 'B', 'C']:
                 # First check if we have text from the history outputs
+                found_text = False
                 if letter in prompt_texts and prompt_texts[letter]:
                     print(f"Saving prompt text for {letter} from history data")
                     save_prompt_text(letter, prompt_texts[letter])
+                    found_text = True
                     
                     # Also update prompt.txt with the content of option A by default
                     if letter == 'A':
                         with open(PROMPT_FILE, 'w', encoding='utf-8') as f:
                             f.write(prompt_texts[letter])
                         print(f"Updated {PROMPT_FILE} with content from option A")
-                    continue
                 
-                # Look for traditional naming format as fallback
-                old_format_path = os.path.join(TEXT_OPTIONS_DIR, f"{letter}_0001.txt")
-                if os.path.exists(old_format_path):
-                    try:
-                        with open(old_format_path, 'r', encoding='utf-8') as f:
-                            prompt_text = f.read()
+                # If we didn't find text in the history, look for the numbered files
+                if not found_text:
+                    # Look for traditional naming format files (_0001.txt)
+                    numbered_files = [f for f in os.listdir(TEXT_OPTIONS_DIR) 
+                                      if f.startswith(f"{letter}_") and f.endswith(".txt")]
+                    
+                    if numbered_files:
+                        # Sort by creation time to get the most recent
+                        newest_file = sorted(numbered_files, 
+                                            key=lambda f: os.path.getctime(os.path.join(TEXT_OPTIONS_DIR, f)),
+                                            reverse=True)[0]
                         
-                        # Save with the simpler naming format
-                        save_prompt_text(letter, prompt_text)
-                        
-                        # Also update prompt.txt with the content of option A by default
-                        if letter == 'A':
-                            with open(PROMPT_FILE, 'w', encoding='utf-8') as f:
-                                f.write(prompt_text)
-                            print(f"Updated {PROMPT_FILE} with content from option A")
+                        try:
+                            with open(os.path.join(TEXT_OPTIONS_DIR, newest_file), 'r', encoding='utf-8') as f:
+                                prompt_text = f.read()
                             
-                    except Exception as e:
-                        print(f"Error processing prompt text for {letter}: {e}")
-                
+                            # Save with the simpler naming format
+                            save_prompt_text(letter, prompt_text)
+                            
+                            # Also update prompt.txt with the content of option A by default
+                            if letter == 'A':
+                                with open(PROMPT_FILE, 'w', encoding='utf-8') as f:
+                                    f.write(prompt_text)
+                                print(f"Updated {PROMPT_FILE} with content from option A")
+                                
+                        except Exception as e:
+                            print(f"Error processing prompt text for {letter}: {e}")
         else:
             print(f"\nOutput directory {OUTPUT_DIR} does not exist!")
         

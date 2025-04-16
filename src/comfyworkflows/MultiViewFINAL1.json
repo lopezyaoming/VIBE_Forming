@@ -806,7 +806,7 @@
   },
   "146": {
     "inputs": {
-      "image": "left (3).png"
+      "image": "left.png"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -815,7 +815,7 @@
   },
   "147": {
     "inputs": {
-      "image": "back (3).png"
+      "image": "back.png"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -865,7 +865,7 @@
   },
   "151": {
     "inputs": {
-      "image": "right (3).png"
+      "image": "right.png"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -891,7 +891,7 @@
   },
   "153": {
     "inputs": {
-      "image": "front (3).png"
+      "image": "front.png"
     },
     "class_type": "LoadImage",
     "_meta": {

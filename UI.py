@@ -380,6 +380,14 @@ class TransparentWindow(QMainWindow):
         self.submit_btn.clicked.connect(self.submit_prompt)
         prompt_layout.addWidget(self.submit_btn)
         
+        # Add remesh toggle button
+        self.remesh_btn = MinimalButton("Remesh (1)")
+        self.remesh_btn.clicked.connect(self.toggle_remesh)
+        # Set a checkable button that can be toggled on/off
+        self.remesh_btn.setCheckable(True)
+        self.remesh_btn.setChecked(False)
+        prompt_layout.addWidget(self.remesh_btn)
+        
         # Add prompt container with horizontal centering
         prompt_wrapper = QWidget()
         prompt_wrapper_layout = QHBoxLayout(prompt_wrapper)
@@ -429,6 +437,9 @@ class TransparentWindow(QMainWindow):
         """Load or refresh the option images"""
         successful_loads = 0
         print("------- Starting image refresh -------")
+        
+        # Check remesh state file for stage updates
+        self.check_remesh_state()
         
         for option in ["A", "B", "C"]:
             try:
@@ -1091,6 +1102,168 @@ class TransparentWindow(QMainWindow):
         """)
         
         msg_box.exec_()
+
+    def toggle_remesh(self):
+        """Toggle the remesh button"""
+        # Get the current state
+        is_enabled = self.remesh_btn.isChecked()
+        
+        # Toggle visual state of the button
+        if is_enabled:
+            # Button is now checked (enabled)
+            self.remesh_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: rgba(100, 40, 40, 180);
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    padding: 8px 16px;
+                    font-size: 14px;
+                }
+                QPushButton:hover {
+                    background-color: rgba(120, 50, 50, 200);
+                }
+                QPushButton:pressed {
+                    background-color: rgba(140, 60, 60, 220);
+                }
+            """)
+            
+            # Add a drop shadow effect for the enabled state
+            shadow = QGraphicsDropShadowEffect()
+            shadow.setBlurRadius(15)
+            shadow.setColor(QColor(255, 0, 0, 150))
+            shadow.setOffset(2, 2)
+            self.remesh_btn.setGraphicsEffect(shadow)
+        else:
+            # Button is now unchecked (disabled)
+            self.remesh_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: rgba(40, 40, 40, 180);
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    padding: 8px 16px;
+                    font-size: 14px;
+                }
+                QPushButton:hover {
+                    background-color: rgba(60, 60, 60, 200);
+                }
+                QPushButton:pressed {
+                    background-color: rgba(80, 80, 80, 220);
+                }
+            """)
+            
+            # Reset the shadow effect
+            shadow = QGraphicsDropShadowEffect()
+            shadow.setBlurRadius(15)
+            shadow.setColor(QColor(0, 0, 0, 150))
+            shadow.setOffset(2, 2)
+            self.remesh_btn.setGraphicsEffect(shadow)
+        
+        # Get the current stage from the button text
+        current_text = self.remesh_btn.text()
+        current_stage = 1
+        
+        if "(" in current_text and ")" in current_text:
+            stage_text = current_text.split("(")[1].split(")")[0]
+            try:
+                current_stage = int(stage_text)
+            except ValueError:
+                current_stage = 1
+        
+        # Create a remesh_state.txt file to communicate with Blender
+        remesh_state_path = os.path.join(BASE_DIR, "remesh_state.txt")
+        
+        try:
+            with open(remesh_state_path, "w") as f:
+                f.write(f"enabled={is_enabled}\n")
+                f.write(f"stage={current_stage}\n")
+                f.write(f"type=SHARP\n")  # Default type, can be changed in Blender UI
+                f.write(f"timestamp={time.time()}\n")
+            
+            self.status_label.setText(f"Remesh {'enabled' if is_enabled else 'disabled'} - Will apply stage {current_stage} on next import")
+            print(f"Saved remesh state: enabled={is_enabled}, stage={current_stage}")
+            
+        except Exception as e:
+            self.status_label.setText(f"Error setting remesh state: {str(e)}")
+            print(f"Error saving remesh state: {str(e)}")
+        
+        # If a new mesh is imported when remesh is enabled, the stage will advance
+        # We'll update our button text when we detect a stage change in Blender via
+        # checking the remesh_state.txt file periodically in self.load_images()
+
+    def check_remesh_state(self):
+        """Check and update remesh state from Blender"""
+        remesh_state_path = os.path.join(BASE_DIR, "remesh_state.txt")
+        
+        try:
+            if not os.path.exists(remesh_state_path):
+                # Create default state file if it doesn't exist
+                with open(remesh_state_path, "w") as f:
+                    f.write("enabled=False\n")
+                    f.write("stage=1\n")
+                    f.write("type=SHARP\n")
+                    f.write(f"timestamp={time.time()}\n")
+                return
+            
+            # Read the state file
+            stage = 1
+            enabled = False
+            
+            with open(remesh_state_path, "r") as f:
+                for line in f:
+                    if line.startswith("stage="):
+                        try:
+                            stage = int(line.strip().split("=")[1])
+                        except:
+                            stage = 1
+                    elif line.startswith("enabled="):
+                        enabled_text = line.strip().split("=")[1].lower()
+                        enabled = enabled_text == "true"
+            
+            # Update the button text and state
+            if hasattr(self, 'remesh_btn'):
+                self.remesh_btn.setText(f"Remesh ({stage})")
+                self.remesh_btn.setChecked(enabled)
+                
+                # Update the button style based on the enabled state
+                if enabled:
+                    self.remesh_btn.setStyleSheet("""
+                        QPushButton {
+                            background-color: rgba(100, 40, 40, 180);
+                            color: white;
+                            border: none;
+                            border-radius: 4px;
+                            padding: 8px 16px;
+                            font-size: 14px;
+                        }
+                        QPushButton:hover {
+                            background-color: rgba(120, 50, 50, 200);
+                        }
+                        QPushButton:pressed {
+                            background-color: rgba(140, 60, 60, 220);
+                        }
+                    """)
+                else:
+                    self.remesh_btn.setStyleSheet("""
+                        QPushButton {
+                            background-color: rgba(40, 40, 40, 180);
+                            color: white;
+                            border: none;
+                            border-radius: 4px;
+                            padding: 8px 16px;
+                            font-size: 14px;
+                        }
+                        QPushButton:hover {
+                            background-color: rgba(60, 60, 60, 200);
+                        }
+                        QPushButton:pressed {
+                            background-color: rgba(80, 80, 80, 220);
+                        }
+                    """)
+                
+        except Exception as e:
+            print(f"Error checking remesh state: {str(e)}")
 
 def find_blender_executable():
     """Find the Blender executable path"""
