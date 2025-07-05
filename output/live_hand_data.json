@@ -1,1 +1,9 @@
-{"left_hand": {"fingertips": []}, "right_hand": {"fingertips": []}}
+{
+  "left_hand": {
+    "fingertips": []
+  },
+  "right_hand": {
+    "fingertips": []
+  },
+  "gesture": "none"
+}
